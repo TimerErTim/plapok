@@ -34,104 +34,32 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
-import StartRitualReducer from "./start_ritual_reducer";
+import CancelActiveSessionsUserReducer from "./cancel_active_sessions_user_reducer";
+import StartNewSessionReducer from "./start_new_session_reducer";
 import SubmitMessageReducer from "./submit_message_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
-import ActiveRitualRow from "./active_ritual_table";
-import FinalBreathRow from "./final_breath_table";
-import GhostMessageRow from "./ghost_message_table";
-import GhostThreadRow from "./ghost_thread_table";
-import GravestoneRow from "./gravestone_table";
-import RitualCancelledRow from "./ritual_cancelled_table";
+import UserActiveSessionRow from "./user_active_session_table";
 
 /** Type-only namespace exports for generated type groups. */
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
-  active_ritual: __table({
-    name: 'active_ritual',
+  user_active_session: __table({
+    name: 'user_active_session',
     indexes: [
-      { name: 'user_id', algorithm: 'btree', columns: [
-        'userId',
-      ] },
     ],
     constraints: [
-      { name: 'active_ritual_user_id_key', constraint: 'unique', columns: ['userId'] },
     ],
-  }, ActiveRitualRow),
-  final_breath: __table({
-    name: 'final_breath',
-    indexes: [
-      { name: 'id', algorithm: 'btree', columns: [
-        'id',
-      ] },
-    ],
-    constraints: [
-      { name: 'final_breath_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, FinalBreathRow),
-  ghost_message: __table({
-    name: 'ghost_message',
-    indexes: [
-      { name: 'message_id', algorithm: 'btree', columns: [
-        'messageId',
-      ] },
-      { name: 'ghost_message_by_thread', algorithm: 'btree', columns: [
-        'threadId',
-      ] },
-      { name: 'ghost_message_by_thread_step', algorithm: 'btree', columns: [
-        'threadId',
-        'stepIndex',
-      ] },
-    ],
-    constraints: [
-      { name: 'ghost_message_message_id_key', constraint: 'unique', columns: ['messageId'] },
-    ],
-  }, GhostMessageRow),
-  ghost_thread: __table({
-    name: 'ghost_thread',
-    indexes: [
-      { name: 'ghost_thread_by_complete', algorithm: 'btree', columns: [
-        'isComplete',
-      ] },
-      { name: 'thread_id', algorithm: 'btree', columns: [
-        'threadId',
-      ] },
-    ],
-    constraints: [
-      { name: 'ghost_thread_thread_id_key', constraint: 'unique', columns: ['threadId'] },
-    ],
-  }, GhostThreadRow),
-  gravestone: __table({
-    name: 'gravestone',
-    indexes: [
-      { name: 'thread_id', algorithm: 'btree', columns: [
-        'threadId',
-      ] },
-    ],
-    constraints: [
-      { name: 'gravestone_thread_id_key', constraint: 'unique', columns: ['threadId'] },
-    ],
-  }, GravestoneRow),
-  ritual_cancelled: __table({
-    name: 'ritual_cancelled',
-    indexes: [
-      { name: 'id', algorithm: 'btree', columns: [
-        'id',
-      ] },
-    ],
-    constraints: [
-      { name: 'ritual_cancelled_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, RitualCancelledRow),
+  }, UserActiveSessionRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
-  __reducerSchema("start_ritual", StartRitualReducer),
+  __reducerSchema("cancel_active_sessions_user", CancelActiveSessionsUserReducer),
+  __reducerSchema("start_new_session", StartNewSessionReducer),
   __reducerSchema("submit_message", SubmitMessageReducer),
 );
 

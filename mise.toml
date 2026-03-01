@@ -30,7 +30,7 @@ run = "spacetime build"
 
 [tasks."generate:spacetimedb_bindings"]
 description = "Generate SpacetimeDB bindings"
-run = "spacetime generate --lang ts --out-dir web/src/module_bindings"
+run = "spacetime generate --lang ts --out-dir web/src/module_bindings --yes"
 
 [tasks.build]
 description = "Build SpacetimeDB module and frontend"

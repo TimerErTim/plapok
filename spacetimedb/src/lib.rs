@@ -1,5 +1,13 @@
+use std::time::Duration;
+
 use rand::Rng;
-use spacetimedb::{reducer, table, Identity, ReducerContext, Table, Timestamp};
+use spacetimedb::{
+    Identity, ReducerContext, ScheduleAt, SpacetimeType, Table, Timestamp, ViewContext, reducer, table, view
+};
+
+use crate::countries::{Country, Iso3166Alpha2};
+
+mod countries;
 
 const TOTAL_STEPS: u32 = 20;
 const PASSIVE_DECAY: i32 = 17;
@@ -11,74 +19,66 @@ const INITIAL_STABILITY: i32 = 100;
 // Tables
 // ---------------------------------------------------------------------------
 
-#[table(
-    accessor = ghost_thread,
-    public,
-    index(accessor = ghost_thread_by_complete, btree(columns = [is_complete]))
-)]
-pub struct GhostThread {
-    #[primary_key]
-    pub thread_id: u64,
-    pub is_complete: bool,
-    pub total_steps: u32,
-}
-
-#[table(
-    accessor = ghost_message,
-    public,
-    index(accessor = ghost_message_by_thread, btree(columns = [thread_id])),
-    index(accessor = ghost_message_by_thread_step, btree(columns = [thread_id, step_index]))
-)]
-pub struct GhostMessage {
+#[derive(PartialEq, Eq, Clone)]
+#[table(accessor = message, private)]
+pub struct Message {
     #[primary_key]
     #[auto_inc]
     pub message_id: u64,
-    pub thread_id: u64,
-    pub step_index: u32,
     pub text: String,
+    pub sender: Identity,
+    pub sent: Timestamp,
+    pub location: Iso3166Alpha2,
 }
 
-#[table(accessor = gravestone, public)]
-pub struct Gravestone {
-    #[primary_key]
-    pub thread_id: u64,
-    pub x: f32,
-    pub y: f32,
-    pub final_words: String,
-    pub clarity_score: u32,
-}
-
-#[table(accessor = active_ritual, public)]
-pub struct ActiveRitual {
-    #[primary_key]
-    pub user_id: Identity,
-    pub ancestor_thread_id: u64,
-    pub descendant_thread_id: u64,
-    pub current_step: u32,
-    pub stability: i32,
-    pub x: f32,
-    pub y: f32,
-}
-
-#[table(accessor = final_breath, public)]
-pub struct FinalBreath {
+#[table(accessor = active_session, private, index(accessor = by_user, btree(columns = [initiator])))]
+pub struct ActiveSession {
     #[primary_key]
     #[auto_inc]
-    pub id: u64,
-    pub thread_id: u64,
-    pub final_words: String,
-    pub clarity_score: u32,
-    pub timestamp: Timestamp,
+    pub seance_id: u64,
+    pub initiator: Identity,
+    pub finished_seance_ref: u64,
+    pub ghost_messages: Vec<u64>,
+    pub initiator_messages: Vec<u64>,
+    pub current_steps: u32,
+    pub state: SessionState,
+    pub initiated_on: Timestamp,
 }
 
-#[table(accessor = ritual_cancelled, public)]
-pub struct RitualCancelled {
+#[derive(SpacetimeType, PartialEq, Eq, Clone, Copy)]
+pub enum SessionState {
+    WaitingForInitiator,
+    GhostWriting,
+    Idle,
+}
+
+#[table(accessor = start_ghost_write, private, scheduled(start_ghost_writing))]
+pub struct StartGhostWriting {
     #[primary_key]
     #[auto_inc]
-    pub id: u64,
-    pub user_id: Identity,
-    pub timestamp: Timestamp,
-    pub descendant_thread_id: Option<u64>,
+    pub seance_id: u64,
+    pub scheduled_at: ScheduleAt,
+}
+
+#[table(accessor = send_ghost_message, private, scheduled(send_ghost_message_red))]
+pub struct SendGhostMessage {
+    #[primary_key]
+    #[auto_inc]
+    pub seance_id: u64,
+    pub scheduled_at: ScheduleAt,
+}
+
+#[table(accessor = finished_session, private, index(accessor = by_user, btree(columns = [initiator])))]
+pub struct FinishedSession {
+    #[primary_key]
+    #[auto_inc]
+    pub seance_id: u64,
+    pub initiator: Identity,
+    pub ghost_messages: Vec<u64>,
+    pub initiator_messages: Vec<u64>,
+    pub total_steps: u32,
+    pub initiated_on: Timestamp,
+    pub finished_on: Timestamp,
 }
 
 // ---------------------------------------------------------------------------
@@ -154,179 +154,248 @@ fn miasma_penalty(text: &str) -> i32 {
 
 #[reducer(init)]
 pub fn init(ctx: &ReducerContext) {
-    let row = ctx.db.ghost_thread().insert(GhostThread {
-        thread_id: 0,
-        is_complete: true,
-        total_steps: TOTAL_STEPS,
-    });
-    let thread_id = row.thread_id;
-
     let seed_messages = [
-        "I am the first voice in the dark.",
-        "Speak, and the link may hold.",
-        "What do you hear when you listen?",
-        "The chain stretches back and forward.",
-        "One more word, and the ritual holds.",
+        "The veil grows thin tonight.",
+        "Whispers echo in the candle light.",
+        "Who calls into the darkness?",
+        "The spirits draw near.",
+        "Not all who wander are lost.",
+        "Your words ripple through the ether.",
+        "Some secrets are best left unspoken.",
+        "Do you seek wisdom or warning?",
+        "The past yearns to be known.",
+        "All things return in time.",
+        "Voices from beyond watch in silence.",
+        "Ask, and the shadows may answer.",
+        "The circle is unbroken.",
+        "Silence sometimes speaks louder.",
+        "What will you sacrifice for knowledge?",
+        "Even echoes tire of waiting.",
+        "Listen. A presence lingers.",
+        "In darkness, truth reveals itself.",
+        "Do not fear what you cannot see.",
+        "The ritual has begun.",
     ];
 
-    for (step, &text) in seed_messages.iter().take(TOTAL_STEPS as usize).enumerate() {
-        ctx.db.ghost_message().insert(GhostMessage {
+    let finished_session = ctx.db.finished_session().insert(FinishedSession {
+        seance_id: 0,
+        initiator: ctx.sender(),
+        ghost_messages: (0..seed_messages.len()).map(|_| ctx.db.message().insert(Message {
             message_id: 0,
-            thread_id,
-            step_index: step as u32,
+            text: "".to_string(),
+            sender: ctx.sender(),
+            sent: ctx.timestamp,
+            location: Iso3166Alpha2::AT,
+        }).message_id).collect(),
+        initiator_messages: seed_messages.map(|text| ctx.db.message().insert(Message {
+            message_id: 0,
             text: text.to_string(),
-        });
-    }
-
-    log::info!("Init: Thread 0 (First Ghost) seeded with {} steps", TOTAL_STEPS);
-}
-
-#[reducer(client_connected)]
-pub fn identity_connected(_ctx: &ReducerContext) {
-    log::info!("Client connected: {:?}", _ctx.sender());
-}
-
-#[reducer(client_disconnected)]
-pub fn identity_disconnected(_ctx: &ReducerContext) {
-    log::info!("Client disconnected");
-}
-
-#[reducer]
-pub fn start_ritual(ctx: &ReducerContext, x: f32, y: f32) -> Result<(), String> {
-    let complete: Vec<GhostThread> = ctx
-        .db
-        .ghost_thread()
-        .ghost_thread_by_complete()
-        .filter(&true)
-        .collect();
-
-    if complete.is_empty() {
-        return Err("No ghost available".to_string());
-    }
-
-    let idx = ctx.rng().gen_range(0..complete.len());
-    let ancestor = &complete[idx];
-    let ancestor_thread_id = ancestor.thread_id;
-    let total_steps = ancestor.total_steps;
-
-    let mut max_thread_id = 0u64;
-    for t in ctx.db.ghost_thread().iter() {
-        if t.thread_id > max_thread_id {
-            max_thread_id = t.thread_id;
-        }
-    }
-    let descendant_thread_id = max_thread_id + 1;
-
-    ctx.db.ghost_thread().insert(GhostThread {
-        thread_id: descendant_thread_id,
-        is_complete: false,
-        total_steps,
-    });
-
-    ctx.db.active_ritual().insert(ActiveRitual {
-        user_id: ctx.sender(),
-        ancestor_thread_id,
-        descendant_thread_id,
-        current_step: 0,
-        stability: INITIAL_STABILITY,
-        x,
-        y,
+            sender: ctx.sender(),
+            sent: ctx.timestamp,
+            location: Iso3166Alpha2::AT,
+        }).message_id).to_vec(),
+        total_steps: seed_messages.len() as u32,
+        initiated_on: ctx.timestamp,
+        finished_on: ctx.timestamp,
     });
 
     log::info!(
-        "Ritual started: ancestor={} descendant={}",
-        ancestor_thread_id,
-        descendant_thread_id
+        "Init: Thread 0 (First Ghost) seeded with {} steps",
+        seed_messages.len()
     );
+}
+
+#[reducer(client_connected)]
+pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
+    start_new_session(ctx)?;
+    Ok(())
+}
+
+#[reducer(client_disconnected)]
+pub fn identity_disconnected(ctx: &ReducerContext) -> Result<(), String> {
+    cancel_active_sessions_user(ctx)?;
     Ok(())
 }
 
 #[reducer]
-pub fn submit_message(ctx: &ReducerContext, text: String) -> Result<(), String> {
-    let ritual = ctx
-        .db
-        .active_ritual()
-        .user_id()
-        .find(ctx.sender())
-        .ok_or("No active ritual")?;
-
-    let ancestor_thread_id = ritual.ancestor_thread_id;
-    let descendant_thread_id = ritual.descendant_thread_id;
-    let current_step = ritual.current_step;
-    let total_steps = ctx
-        .db
-        .ghost_thread()
-        .thread_id()
-        .find(&ancestor_thread_id)
-        .ok_or("Ancestor thread not found")?
-        .total_steps;
-
-    let ghost_msg = ctx
-        .db
-        .ghost_message()
-        .ghost_message_by_thread_step()
-        .filter((ancestor_thread_id, current_step..=current_step))
-        .next()
-        .ok_or("Ghost message not found for step")?;
-
-    let mut stability = ritual.stability;
-    stability -= PASSIVE_DECAY;
-    stability += miasma_penalty(&text);
-    stability += relevance_bonus(&ghost_msg.text, &text);
-    stability = stability.clamp(0, 100);
-
-    ctx.db.ghost_message().insert(GhostMessage {
-        message_id: 0,
-        thread_id: descendant_thread_id,
-        step_index: current_step,
-        text: text.clone(),
-    });
-
-    if stability <= 0 {
-        ctx.db.ritual_cancelled().insert(RitualCancelled {
-            id: 0,
-            user_id: ctx.sender(),
-            timestamp: ctx.timestamp,
-            descendant_thread_id: Some(descendant_thread_id),
-        });
-        ctx.db.active_ritual().user_id().delete(&ctx.sender());
-        log::info!("Ritual failed: stability 0");
-        return Ok(());
+pub fn start_ghost_writing(ctx: &ReducerContext, row: StartGhostWriting) -> Result<(), String> {
+    if ctx.connection_id().is_some() {
+        return Err("Can run only scheduled reducer".into());
     }
 
-    let next_step = current_step + 1;
-    if next_step >= total_steps {
-        if let Some(desc) = ctx.db.ghost_thread().thread_id().find(&descendant_thread_id) {
-            ctx.db.ghost_thread().thread_id().update(GhostThread {
-                is_complete: true,
-                ..desc
-            });
-        }
-        let clarity = stability as u32;
-        ctx.db.gravestone().insert(Gravestone {
-            thread_id: descendant_thread_id,
-            x: ritual.x,
-            y: ritual.y,
-            final_words: text.clone(),
-            clarity_score: clarity,
-        });
-        ctx.db.final_breath().insert(FinalBreath {
-            id: 0,
-            thread_id: descendant_thread_id,
-            final_words: text,
-            clarity_score: clarity,
-            timestamp: ctx.timestamp,
-        });
-        ctx.db.active_ritual().user_id().delete(&ctx.sender());
-        log::info!("Ritual succeeded: thread={}", descendant_thread_id);
-        return Ok(());
+    let mut active_session = ctx
+        .db
+        .active_session()
+        .seance_id()
+        .find(row.seance_id)
+        .ok_or("Active session not found")?;
+    if active_session.state != SessionState::Idle {
+        return Err("Active session is not idle".to_string());
     }
-
-    ctx.db.active_ritual().user_id().update(ActiveRitual {
-        current_step: next_step,
-        stability,
-        ..ritual
+    active_session.state = SessionState::GhostWriting;
+    ctx.db.active_session().seance_id().update(active_session);
+    ctx.db.send_ghost_message().insert(SendGhostMessage {
+        seance_id: row.seance_id,
+        scheduled_at: ScheduleAt::Time(
+            ctx.timestamp + Duration::from_secs(ctx.rng().gen_range(3..7)),
+        ),
     });
-
     Ok(())
+}
+
+#[reducer]
+pub fn send_ghost_message_red(ctx: &ReducerContext, row: SendGhostMessage) -> Result<(), String> {
+    if ctx.connection_id().is_some() {
+        return Err("Can run only scheduled reducer".into());
+    }
+    let mut active_session = ctx
+        .db
+        .active_session()
+        .seance_id()
+        .find(row.seance_id)
+        .ok_or("Active session not found")?;
+    if active_session.state != SessionState::GhostWriting {
+        return Err("Active session is not ghost writing".to_string());
+    }
+    active_session.state = SessionState::WaitingForInitiator;
+    let reference_ession = ctx
+        .db
+        .finished_session()
+        .seance_id()
+        .find(active_session.finished_seance_ref)
+        .ok_or("Reference session not found")?;
+    let reference_ghost_messages = reference_ession.ghost_messages;
+    let next_step = active_session.current_steps + 1;
+    let next_ghost_message = reference_ghost_messages
+        .get(next_step as usize)
+        .ok_or("Next ghost message not found")?;
+    active_session.ghost_messages.push(*next_ghost_message);
+    active_session.current_steps = next_step;
+    ctx.db.active_session().seance_id().update(active_session);
+    Ok(())
+}
+
+#[reducer]
+pub fn cancel_active_sessions_user(ctx: &ReducerContext) -> Result<(), String> {
+    ctx.db.active_session().by_user().delete(&ctx.sender());
+    Ok(())
+}
+
+#[reducer]
+pub fn start_new_session(ctx: &ReducerContext) -> Result<(), String> {
+    cancel_active_sessions_user(ctx)?;
+
+    // Find reference session
+    let reference_sessions = ctx
+        .db
+        .finished_session()
+        .iter()
+        .filter(|s| s.initiator != ctx.sender())
+        .collect::<Vec<_>>();
+    // Select random reference session using ctx.rng
+    if reference_sessions.is_empty() {
+        return Err("No available reference sessions".to_string());
+    }
+    let idx = ctx.rng().gen_range(0..reference_sessions.len());
+    let reference_session = &reference_sessions[idx];
+
+    // Create new session
+    let new_session = ctx.db.active_session().insert(ActiveSession {
+        seance_id: 0,
+        initiator: ctx.sender(),
+        finished_seance_ref: reference_session.seance_id,
+        ghost_messages: vec![],
+        initiator_messages: vec![],
+        current_steps: 0,
+        state: SessionState::Idle,
+        initiated_on: ctx.timestamp,
+    });
+    log::info!(
+        "Ritual started: ancestor={} new={}",
+        reference_session.seance_id,
+        new_session.seance_id
+    );
+
+    ctx.db.start_ghost_write().insert(StartGhostWriting {
+        seance_id: new_session.seance_id,
+        scheduled_at: ScheduleAt::Time(ctx.timestamp + Duration::from_secs(ctx.rng().gen_range(1..4))),
+    });
+    Ok(())
+}
+
+#[reducer]
+pub fn submit_message(ctx: &ReducerContext, text: String, location: Iso3166Alpha2) -> Result<(), String> {
+    let mut session = ctx.db.active_session().by_user().filter(&ctx.sender()).next().ok_or("Active session not found")?;
+    let reference_session = ctx
+        .db
+        .finished_session()
+        .seance_id()
+        .find(session.finished_seance_ref)
+        .ok_or("Reference session not found")?;
+    let new_message = Message {
+        message_id: 0,
+        text,
+        sender: ctx.sender(),
+        sent: ctx.timestamp,
+        location: location,
+    };
+    let new_message = ctx.db.message().insert(new_message);
+
+    session.initiator_messages.push(new_message.message_id);
+
+    // Check if session is complete
+    if session.current_steps + 1 >= reference_session.total_steps {
+        let new_finished_session = ctx.db.finished_session().insert(FinishedSession {
+            seance_id: 0,
+            initiator: session.initiator,
+            ghost_messages: session.ghost_messages,
+            initiator_messages: session.initiator_messages,
+            total_steps: session.current_steps + 1,
+            initiated_on: session.initiated_on,
+            finished_on: ctx.timestamp,
+        });
+        ctx.db.finished_session().insert(new_finished_session);
+        ctx.db.active_session().seance_id().delete(session.seance_id);
+        return Ok(())
+    }
+
+    session.state = SessionState::Idle;
+    let session = ctx.db.active_session().seance_id().update(session);
+    ctx.db.start_ghost_write().insert(StartGhostWriting {
+        seance_id: session.seance_id,
+        scheduled_at: ScheduleAt::Time(ctx.timestamp + Duration::from_secs(ctx.rng().gen_range(1..4))),
+    });
+    Ok(())
+}
+
+// Views
+#[derive(SpacetimeType, PartialEq, Eq, Clone)]
+pub struct CurrentSession {
+    pub ghost_messages: Vec<Message>,
+    pub initiator_messages: Vec<Message>,
+    pub state: SessionState,
+    pub initiated_on: Timestamp,
+    pub is_complete: bool
+}
+
+#[view(accessor = user_active_session, public)]
+pub fn user_active_session(ctx: &ViewContext) -> Option<CurrentSession> {
+    if let Some(active_session) = ctx.db.active_session().by_user().filter(&ctx.sender()).next() {
+        Some(CurrentSession {
+            ghost_messages: active_session.ghost_messages.iter().map(|id| ctx.db.message().message_id().find(*id).unwrap()).collect(),
+            initiator_messages: active_session.initiator_messages.iter().map(|id| ctx.db.message().message_id().find(*id).unwrap()).collect(),
+            state: active_session.state,
+            initiated_on: active_session.initiated_on,
+            is_complete: false,
+        })
+    } else {
+        let finished_session = ctx.db.finished_session().by_user().filter(&ctx.sender()).max_by_key(|s| s.finished_on);
+        finished_session.map(|finished_session| CurrentSession {
+            ghost_messages: finished_session.ghost_messages.iter().map(|id| ctx.db.message().message_id().find(*id).unwrap()).collect(),
+            initiator_messages: finished_session.initiator_messages.iter().map(|id| ctx.db.message().message_id().find(*id).unwrap()).collect(),
+            state: SessionState::Idle,
+            initiated_on: finished_session.initiated_on,
+            is_complete: true,
+        })
+    }
 }

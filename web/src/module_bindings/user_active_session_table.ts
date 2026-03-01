@@ -9,14 +9,22 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-
 import {
-  Iso3166Alpha2,
+  SessionState,
+  Message,
 } from "./types";
 
-export default {
-  text: __t.string(),
-  get location() {
-    return Iso3166Alpha2;
+
+export default __t.row({
+  get ghostMessages() {
+    return __t.array(Message).name("ghost_messages");
   },
-};
+  get initiatorMessages() {
+    return __t.array(Message).name("initiator_messages");
+  },
+  get state() {
+    return SessionState;
+  },
+  initiatedOn: __t.timestamp().name("initiated_on"),
+  isComplete: __t.bool().name("is_complete"),
+});
