@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { DbConnection } from "@/module_bindings";
 import { SpacetimeDBProvider } from "spacetimedb/react";
-import { MapView } from "@/components/MapView";
 import { RitualView } from "@/components/RitualView";
 
 function AppContent() {

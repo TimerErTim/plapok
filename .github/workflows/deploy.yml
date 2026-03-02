@@ -22,6 +22,7 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
+          rustflags: ""
           toolchain: stable
           cache: true
 
