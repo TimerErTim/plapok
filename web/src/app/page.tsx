@@ -7,7 +7,7 @@ import { RitualView } from "@/components/RitualView";
 
 function AppContent() {
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="h-screen flex flex-col overflow-hidden">
       <RitualView />
     </main>
   );

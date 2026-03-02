@@ -242,6 +242,84 @@ pub fn start_ghost_writing(ctx: &ReducerContext, row: StartGhostWriting) -> Resu
     Ok(())
 }
 
+/// When current ref is exhausted (next_step >= len or len == 0), pick another; index into the chosen ref with modulo.
+/// Returns Ok(None) when no other ref is found — caller should finish the seance.
+fn resolve_ghost_message(
+    ctx: &ReducerContext,
+    active_session: &mut ActiveSession,
+    next_step: u32,
+) -> Result<Option<u64>, String> {
+    let next = next_step as usize;
+    let mut ref_id = active_session.finished_seance_ref;
+    loop {
+        let reference_session = ctx
+            .db
+            .finished_session()
+            .seance_id()
+            .find(ref_id)
+            .ok_or("Reference session not found")?;
+        let script = &reference_session.initiator_messages;
+        let len = script.len();
+        if len > 0 && next < len {
+            let msg_id = script
+                .get(next)
+                .copied()
+                .ok_or("Next ghost message not found".to_string())?;
+            active_session.finished_seance_ref = ref_id;
+            return Ok(Some(msg_id));
+        }
+        if len > 0 && next >= len {
+            // Overflow: find another reference script and index into it with modulo.
+            let others: Vec<_> = ctx
+                .db
+                .finished_session()
+                .iter()
+                .filter(|s| {
+                    s.initiator != active_session.initiator
+                        && s.seance_id != ref_id
+                        && !s.initiator_messages.is_empty()
+                })
+                .collect();
+            if others.is_empty() {
+                return Ok(None);
+            }
+            let idx = ctx.rng().gen_range(0..others.len());
+            ref_id = others[idx].seance_id;
+            active_session.finished_seance_ref = ref_id;
+            let new_ref = ctx
+                .db
+                .finished_session()
+                .seance_id()
+                .find(ref_id)
+                .ok_or("Reference session not found")?;
+            let new_len = new_ref.initiator_messages.len();
+            let index = next % new_len;
+            let msg_id = new_ref
+                .initiator_messages
+                .get(index)
+                .copied()
+                .ok_or("Next ghost message not found".to_string())?;
+            return Ok(Some(msg_id));
+        }
+        // len == 0: find another reference script.
+        let others: Vec<_> = ctx
+            .db
+            .finished_session()
+            .iter()
+            .filter(|s| {
+                s.initiator != active_session.initiator
+                    && s.seance_id != ref_id
+                    && !s.initiator_messages.is_empty()
+            })
+            .collect();
+        if others.is_empty() {
+            return Ok(None);
+        }
+        let idx = ctx.rng().gen_range(0..others.len());
+        ref_id = others[idx].seance_id;
+    }
+}
+
 #[reducer]
 pub fn send_ghost_message_red(ctx: &ReducerContext, row: SendGhostMessage) -> Result<(), String> {
     if ctx.connection_id().is_some() {
@@ -256,32 +334,61 @@ pub fn send_ghost_message_red(ctx: &ReducerContext, row: SendGhostMessage) -> Re
     if active_session.state != SessionState::GhostWriting {
         return Err("Active session is not ghost writing".to_string());
     }
-    active_session.state = SessionState::WaitingForInitiator;
-    let reference_session = ctx
-        .db
-        .finished_session()
-        .seance_id()
-        .find(active_session.finished_seance_ref)
-        .ok_or("Reference session not found")?;
-    let our_ghost_messages = reference_session.initiator_messages;
     let next_step = active_session.current_steps + 1;
-    let next_ghost_message = our_ghost_messages
-        .get(next_step as usize)
-        .ok_or("Next ghost message not found")?;
-    active_session.ghost_messages.push(*next_ghost_message);
-    active_session.current_steps = next_step;
-    ctx.db.active_session().seance_id().update(active_session);
-    log::info!("Ghost message seance {} step {}", row.seance_id, next_step);
+    match resolve_ghost_message(ctx, &mut active_session, next_step)? {
+        Some(msg_id) => {
+            active_session.state = SessionState::WaitingForInitiator;
+            active_session.ghost_messages.push(msg_id);
+            active_session.current_steps = next_step;
+            ctx.db.active_session().seance_id().update(active_session);
+            log::info!("Ghost message seance {} step {}", row.seance_id, next_step);
+        }
+        None => {
+            let total_steps = active_session.initiator_messages.len() as u32;
+            ctx.db.finished_session().insert(FinishedSession {
+                seance_id: 0,
+                initiator: active_session.initiator,
+                ghost_messages: active_session.ghost_messages,
+                initiator_messages: active_session.initiator_messages,
+                total_steps,
+                initiated_on: active_session.initiated_on,
+                finished_on: ctx.timestamp,
+            });
+            ctx.db.active_session().seance_id().delete(&row.seance_id);
+            log::info!("Seance {} finished (no other reference script)", row.seance_id);
+        }
+    }
     Ok(())
 }
 
+const MIN_INITIATOR_MESSAGES_TO_PERSIST: usize = 5;
+
 #[reducer]
 pub fn cancel_active_sessions_user(ctx: &ReducerContext) -> Result<(), String> {
-    let active_sessions = ctx.db.active_session().by_user().filter(ctx.sender());
-    for session in active_sessions {
+    let to_cancel: Vec<ActiveSession> = ctx
+        .db
+        .active_session()
+        .by_user()
+        .filter(&ctx.sender())
+        .collect();
+    for session in to_cancel {
         log::info!("Cancelling active session {}", session.seance_id);
-        for message_id in session.initiator_messages {
-            ctx.db.message().message_id().delete(&message_id);
+        if session.initiator_messages.len() > MIN_INITIATOR_MESSAGES_TO_PERSIST {
+            log::info!("Saving active session {} to finished session", session.seance_id);
+            let total_steps = session.initiator_messages.len() as u32;
+            let _ = ctx.db.finished_session().insert(FinishedSession {
+                seance_id: 0,
+                initiator: session.initiator,
+                ghost_messages: session.ghost_messages,
+                initiator_messages: session.initiator_messages.clone(),
+                total_steps,
+                initiated_on: session.initiated_on,
+                finished_on: ctx.timestamp,
+            });
+        } else {
+            for message_id in &session.initiator_messages {
+                ctx.db.message().message_id().delete(message_id);
+            }
         }
         ctx.db.active_session().seance_id().delete(&session.seance_id);
     }
