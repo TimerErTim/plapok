@@ -1,7 +1,7 @@
 "use client";
 
 import { hasFlag } from "country-flag-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
 import type { Iso3166Alpha2, Message } from "@/module_bindings/types";
@@ -181,10 +181,14 @@ export function RitualView() {
   const [sessionRows] = useTable(tables.user_active_session);
   const currentSession = sessionRows?.[0];
   const submitMessageReducer = useReducer(reducers.submitMessage);
+  const startNewSessionReducer = useReducer(reducers.startNewSession);
   const detectedLocation = useDetectedLocation();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [input, setInput] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [newSeanceError, setNewSeanceError] = useState<string | null>(null);
+  const [startingNew, setStartingNew] = useState(false);
 
   const canSend =
     currentSession &&
@@ -213,6 +217,10 @@ export function RitualView() {
     return all;
   }, [currentSession]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mergedMessages.length, showWritingIndicator]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -224,6 +232,18 @@ export function RitualView() {
       setInput("");
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Failed to send");
+    }
+  };
+
+  const handleStartNewSeance = async () => {
+    setNewSeanceError(null);
+    setStartingNew(true);
+    try {
+      await startNewSessionReducer();
+      setStartingNew(false);
+    } catch (e) {
+      setNewSeanceError(e instanceof Error ? e.message : "Failed to start new seance");
+      setStartingNew(false);
     }
   };
 
@@ -242,38 +262,54 @@ export function RitualView() {
           <MessageBubble key={`${item.type}-${item.messageId}`} item={item} />
         ))}
         {showWritingIndicator && <GhostWritingIndicator />}
+        <div ref={messagesEndRef} aria-hidden />
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className="p-3 border-t border-stone-700/50 bg-stone-900/50"
-      >
-        {submitError && (
-          <p className="text-red-400 text-sm mb-2">{submitError}</p>
-        )}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              canSend
-                ? "Speak to the spirit…"
-                : currentSession.isComplete
-                  ? "Session ended"
-                  : "Wait for the ghost…"
-            }
-            disabled={!canSend}
-            className="flex-1 rounded-xl bg-stone-800 text-stone-100 placeholder-stone-500 border border-stone-600 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-600/50 disabled:opacity-60 disabled:cursor-not-allowed"
-          />
+      {currentSession.isComplete && (
+        <div className="p-3 border-t border-stone-700/50 bg-stone-900/50">
+          {newSeanceError && (
+            <p className="text-red-400 text-sm mb-2">{newSeanceError}</p>
+          )}
           <button
-            type="submit"
-            disabled={!canSend || !input.trim()}
-            className="rounded-xl bg-amber-800 text-amber-100 px-4 py-2.5 font-medium hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            type="button"
+            onClick={handleStartNewSeance}
+            disabled={startingNew}
+            className="w-full rounded-xl bg-amber-800 text-amber-100 px-4 py-2.5 font-medium hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Send
+            {startingNew ? "Starting new seance…" : "New seance"}
           </button>
         </div>
-      </form>
+      )}
+      {!currentSession.isComplete && (
+        <form
+          onSubmit={handleSubmit}
+          className="p-3 border-t border-stone-700/50 bg-stone-900/50"
+        >
+          {submitError && (
+            <p className="text-red-400 text-sm mb-2">{submitError}</p>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={
+                canSend
+                  ? "Speak to the spirit…"
+                  : "Wait for the ghost…"
+              }
+              disabled={!canSend}
+              className="flex-1 rounded-xl bg-stone-800 text-stone-100 placeholder-stone-500 border border-stone-600 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-600/50 disabled:opacity-60 disabled:cursor-not-allowed"
+            />
+            <button
+              type="submit"
+              disabled={!canSend || !input.trim()}
+              className="rounded-xl bg-amber-800 text-amber-100 px-4 py-2.5 font-medium hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Send
+            </button>
+          </div>
+        </form>
+      )}
     </section>
   );
 }

@@ -277,7 +277,14 @@ pub fn send_ghost_message_red(ctx: &ReducerContext, row: SendGhostMessage) -> Re
 
 #[reducer]
 pub fn cancel_active_sessions_user(ctx: &ReducerContext) -> Result<(), String> {
-    ctx.db.active_session().by_user().delete(ctx.sender());
+    let active_sessions = ctx.db.active_session().by_user().filter(ctx.sender());
+    for session in active_sessions {
+        log::info!("Cancelling active session {}", session.seance_id);
+        for message_id in session.initiator_messages {
+            ctx.db.message().message_id().delete(&message_id);
+        }
+        ctx.db.active_session().seance_id().delete(&session.seance_id);
+    }
     Ok(())
 }
 
