@@ -35,8 +35,11 @@ jobs:
       - name: Install SpacetimeDB
         run: curl -sSf https://install.spacetimedb.com | sh -s -- --yes
 
+      - name: Install dependencies
+        run: mise run prepare:web
+
       - name: Check
-        run: mise check
+        run: mise run check
 
       - name: Build frontend
         run: mise run build:web

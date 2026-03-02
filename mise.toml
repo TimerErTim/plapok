@@ -3,6 +3,11 @@
 node = "lts"
 rust = "stable"
 
+[tasks."prepare:web"]
+description = "Prepares web deps"
+dir   = "{{ config_root }}/web"
+run = "npm install"
+
 [tasks."check:web"]
 description = "Run TypeScript type/compile checks"
 dir = "{{ config_root }}/web"
