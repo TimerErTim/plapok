@@ -13,9 +13,9 @@ function AppContent() {
   );
 }
 
-export default function Home() {
+export default function CatchAllPage() {
   const uri = process.env.NEXT_PUBLIC_SPACETIMEDB_URI ?? "http://localhost:3000";
-  const dbName = process.env.NEXT_PUBLIC_SPACETIMEDB_MODULE ?? "aether-voices-01";
+  const dbName = process.env.NEXT_PUBLIC_SPACETIMEDB_MODULE ?? "hive-author-01";
   var localStorage = typeof window !== "undefined" && window.localStorage ? window.localStorage : null
 
   const connectionBuilder = useMemo(
