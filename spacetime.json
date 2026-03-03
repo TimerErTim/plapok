@@ -1,5 +1,10 @@
 {
-  "module-path": "./spacetimedb",
   "server": "maincloud",
-  "database": "timerertim-writing-ritual-01"
+  "database": "timerertim-plapok-01",
+  "module-path": "./spacetimedb",
+  "generate": [{
+    "language": "typescript",
+    "out_dir": "./web/src/spacetimedb_bindings",
+    "module_path": "./spacetimedb"
+  }]
 }
