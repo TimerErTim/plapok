@@ -1,195 +1,129 @@
 use spacetimedb::{
-    AnonymousViewContext, Identity, ScheduleAt, SpacetimeType, Timestamp, ViewContext, table, view
+    AnonymousViewContext, ConnectionId, Identity, ScheduleAt, SpacetimeType, Timestamp, ViewContext, table, view
 };
 
-use crate::{ROOT_BOOK_ID, countries::Iso3166Alpha2, use_cases::handle_book_word_voting_ends};
+use crate::use_cases::handle_delete_room;
 
 // Tables
-#[table(accessor = book, private)]
-pub struct Book {
+
+#[table(accessor = profile, private)]
+pub struct Profile {
     #[primary_key]
-    #[auto_inc]
-    pub id: u64,
-    pub title: String,
-    pub author: String,
-    pub carret_position: u32,
-    pub started_at: Timestamp,
+    pub identity: Identity,
+    pub name: String,
+    pub avatar: Avatar,
 }
 
-#[table(accessor = book_word, private)]
-pub struct BookWord {
-    #[primary_key]
-    #[auto_inc]
-    pub id: u64, // Shares same Id with chosen candidate
-    #[index(btree)]
-    pub book_id: u64,
-    pub decided_at: Timestamp,
-    pub vote_distribution: Vec<BookWordVotes>,
+#[derive(SpacetimeType, Clone, Debug, PartialEq)]
+pub enum Avatar {
+    Alice,
+    Bob,
+    Charlie,
+    Diana,
+    Eve,
+    Frank,
+    Grace,
+    Henry,
+    Ivy,
+    Jack,
+    Karen,
+    Leo,
+    Maria,
+    Nora,
+    Oscar,
+    Paul,
+    Quinn,
+    Ruby,
+    Steve,
+    Tina,
+    FromName,
+    FromIdentity
 }
 
-#[derive(SpacetimeType)]
-pub struct BookWordVotes {
-    pub candidate_id: u64,
-    pub vote_count: u32,
-}
-
-#[table(accessor = book_word_candidate, private, 
-    index(accessor = by_book_position, btree(columns = [book_id, position])),
-    index(accessor = by_id_book_position, btree(columns = [id, book_id, position]))
+#[table(accessor = room, private,
+    index(accessor = by_code, btree(columns = [code])),
 )]
-pub struct BookWordCandidate {
+pub struct Room {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
-    pub book_id: u64,
-    pub word: String,
-    pub position: u32,
+    #[unique]
+    pub code: String,
+    pub permanent: bool, // If true, room is permanent and will not be deleted upon last participant leaving
 }
 
-#[table(accessor = book_word_vote, private)]
-pub struct BookWordVote {
-    #[primary_key]
-    #[auto_inc]
-    pub id: u64,
-    #[index(btree)]
-    pub candidate_id: u64,
-    #[index(btree)]
-    pub voter: Identity,
-    pub location: Iso3166Alpha2,
+#[derive(SpacetimeType, Clone, Debug, PartialEq)]
+pub enum ParticipantRole {
+    Moderator,
+    Player,
+    Spectator,
 }
 
-#[table(accessor = book_word_voting_ends, private,
-    scheduled(handle_book_word_voting_ends),
-    index(accessor = by_book_position, btree(columns = [book_id, position]))
+#[table(accessor = participant, private,
+    index(accessor = by_room_id, btree(columns = [room_id])),
+    index(accessor = by_identity_room_id, btree(columns = [identity, room_id]))
 )]
-pub struct BookWordVotingEnds {
+#[derive(Clone)]
+pub struct Participant {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
-    pub book_id: u64,
-    pub position: u32,
+    pub identity: Identity,
+    pub room_id: u64,
+    pub name: String,
+    pub avatar: Avatar,
+    #[default(ParticipantRole::Player)]
+    pub role: ParticipantRole,
+}
+
+/// Represents an actual connection/participation to a room
+#[table(accessor = participation, private,
+    index(accessor = by_participant_id, btree(columns = [participant_id]))
+)]
+pub struct Participation {
+    #[primary_key]
+    pub connection_id: ConnectionId,
+    pub participant_id: u64,
+}
+
+#[table(accessor = delete_room, private, scheduled(handle_delete_room))]
+pub struct DeleteRoom {
+    #[primary_key]
+    pub room_id: u64,
     pub scheduled_at: ScheduleAt,
 }
 
+#[table(accessor = room_reveal_outcome, private)]
+pub struct RoomRevealOutcome {
+    #[primary_key]
+    pub room_id: u64,
+    pub timestamp: Timestamp,
+    pub votes: Vec<RoomRevealVote>,
+}
+
+#[derive(SpacetimeType)]
+pub struct RoomRevealVote {
+    pub participant_id: u64,
+    pub participant_name: String,
+    pub chosen_card_id: String,
+    pub chosen_card_name: String,
+}
+
+#[table(accessor = ongoing_vote, private,
+    index(accessor = by_room_id, btree(columns = [room_id])),
+    index(accessor = by_participant_id, btree(columns = [participant_id]))
+)]
+pub struct OngoingVote {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    pub room_id: u64,
+    pub participant_id: u64,
+    pub chosen_card: String,
+}
+
 // Views
-#[derive(SpacetimeType)]
-
-pub struct CurrentCandidateView {
-    pub word: String,
-    pub votes_amount: u32,
-}
-
-#[derive(SpacetimeType)]
-pub struct CurrentVotingView {
-    pub voting_ends: Timestamp,
-    pub candidates: Vec<CurrentCandidateView>,
-}
-
-#[view(accessor = current_word_votes, public)]
-pub fn current_word_votes(ctx: &AnonymousViewContext) -> Option<CurrentVotingView> {
-    // Collect all candidates at the current position
-    let book = ctx.db.book().id().find(ROOT_BOOK_ID)?;
-    let Some(voting_ends) = ctx
-        .db
-        .book_word_voting_ends()
-        .by_book_position()
-        .filter((book.id, book.carret_position))
-        .next()
-    else {
-        return None;
-    };
-
-    let existing_candidates = ctx
-        .db
-        .book_word_candidate()
-        .by_book_position()
-        .filter((book.id, book.carret_position));
-
-    let candidates = existing_candidates
-        .map(|candidate| {
-            let votes = ctx
-                .db
-                .book_word_vote()
-                .candidate_id()
-                .filter(&candidate.id)
-                .count();
-            CurrentCandidateView {
-                word: candidate.word,
-                votes_amount: votes as u32,
-            }
-        })
-        .collect();
-
-    Some(CurrentVotingView {
-        voting_ends: match voting_ends.scheduled_at {
-            ScheduleAt::Time(time) => time,
-            ScheduleAt::Interval(_) => {
-                unreachable!("Voting ends should be a timestamp, not duration")
-            }
-        },
-        candidates,
-    })
-}
-
-#[derive(SpacetimeType)]
-pub struct CurrentBookView {
-    pub carret_position: u32,
-    pub words: Vec<BookWordView>,
-}
-
-#[derive(SpacetimeType)]
-pub struct BookWordView {
-    pub word: String,
-    pub decided_at: Timestamp,
-    pub votes_distribution: Vec<BookWordVotesView>,
-}
-
-#[derive(SpacetimeType)]
-pub struct BookWordVotesView {
-    pub word: String,
-    pub vote_count: u32,
-}
-
-#[view(accessor = current_book_view, public)]
-pub fn current_book_view(ctx: &AnonymousViewContext) -> Option<CurrentBookView> {
-    let book = ctx.db.book().id().find(ROOT_BOOK_ID).unwrap();
-
-    let mut words: Vec<_> = ctx.db.book_word().book_id().filter(book.id).map(|word| BookWordView {
-        word: ctx.db.book_word_candidate().id().find(word.id).unwrap().word,
-        decided_at: word.decided_at,
-        votes_distribution: word.vote_distribution.iter().map(|vote| BookWordVotesView {
-            word: ctx.db.book_word_candidate().id().find(vote.candidate_id).unwrap().word,
-            vote_count: vote.vote_count,
-        }).collect(),
-    }).collect();
-    words.sort_by_key(|word| word.decided_at);
-    
-    Some(CurrentBookView { carret_position: book.carret_position, words })
-}
-
-#[derive(SpacetimeType)]
-pub struct MyVote {
-    pub word: String,
-    pub location: Iso3166Alpha2,
-}
-
-#[view(accessor = my_vote, public)]
-pub fn my_vote(ctx: &ViewContext) -> Option<MyVote> {
-    let book = ctx.db.book().id().find(ROOT_BOOK_ID)?;
-    let Some(voting_ends) = ctx
-        .db
-        .book_word_voting_ends()
-        .by_book_position()
-        .filter((book.id, book.carret_position))
-        .next()
-    else {
-        return None;
-    };
-
-    ctx.db.book_word_vote().voter().filter(ctx.sender()).find_map(|vote|{
-        ctx.db.book_word_candidate().by_id_book_position().filter((vote.candidate_id, book.id, book.carret_position)).next().map(|candidate| (vote, candidate))
-    }).map(|(vote, candidate)| MyVote {
-        word: candidate.word,
-        location: vote.location,
-    })
+#[view(accessor = my_profile, public)]
+pub fn my_profile(ctx: &ViewContext) -> Option<Profile> {
+    ctx.db.profile().identity().find(ctx.sender())
 }

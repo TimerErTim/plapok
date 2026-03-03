@@ -10,301 +10,105 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export const Book = __t.object("Book", {
-  id: __t.u64(),
-  title: __t.string(),
-  author: __t.string(),
-  carretPosition: __t.u32(),
-  startedAt: __t.timestamp(),
+// The tagged union or sum type for the algebraic type `Avatar`.
+export const Avatar = __t.enum("Avatar", {
+  Alice: __t.unit(),
+  Bob: __t.unit(),
+  Charlie: __t.unit(),
+  Diana: __t.unit(),
+  Eve: __t.unit(),
+  Frank: __t.unit(),
+  Grace: __t.unit(),
+  Henry: __t.unit(),
+  Ivy: __t.unit(),
+  Jack: __t.unit(),
+  Karen: __t.unit(),
+  Leo: __t.unit(),
+  Maria: __t.unit(),
+  Nora: __t.unit(),
+  Oscar: __t.unit(),
+  Paul: __t.unit(),
+  Quinn: __t.unit(),
+  Ruby: __t.unit(),
+  Steve: __t.unit(),
+  Tina: __t.unit(),
+  FromName: __t.unit(),
+  FromIdentity: __t.unit(),
 });
-export type Book = __Infer<typeof Book>;
+export type Avatar = __Infer<typeof Avatar>;
 
-export const BookWord = __t.object("BookWord", {
-  id: __t.u64(),
-  bookId: __t.u64(),
-  decidedAt: __t.timestamp(),
-  get voteDistribution() {
-    return __t.array(BookWordVotes);
-  },
-});
-export type BookWord = __Infer<typeof BookWord>;
-
-export const BookWordCandidate = __t.object("BookWordCandidate", {
-  id: __t.u64(),
-  bookId: __t.u64(),
-  word: __t.string(),
-  position: __t.u32(),
-});
-export type BookWordCandidate = __Infer<typeof BookWordCandidate>;
-
-export const BookWordView = __t.object("BookWordView", {
-  word: __t.string(),
-  decidedAt: __t.timestamp(),
-  get votesDistribution() {
-    return __t.array(BookWordVotesView);
-  },
-});
-export type BookWordView = __Infer<typeof BookWordView>;
-
-export const BookWordVote = __t.object("BookWordVote", {
-  id: __t.u64(),
-  candidateId: __t.u64(),
-  voter: __t.identity(),
-  get location() {
-    return Iso3166Alpha2;
-  },
-});
-export type BookWordVote = __Infer<typeof BookWordVote>;
-
-export const BookWordVotes = __t.object("BookWordVotes", {
-  candidateId: __t.u64(),
-  voteCount: __t.u32(),
-});
-export type BookWordVotes = __Infer<typeof BookWordVotes>;
-
-export const BookWordVotesView = __t.object("BookWordVotesView", {
-  word: __t.string(),
-  voteCount: __t.u32(),
-});
-export type BookWordVotesView = __Infer<typeof BookWordVotesView>;
-
-export const BookWordVotingEnds = __t.object("BookWordVotingEnds", {
-  id: __t.u64(),
-  bookId: __t.u64(),
-  position: __t.u32(),
+export const DeleteRoom = __t.object("DeleteRoom", {
+  roomId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
 });
-export type BookWordVotingEnds = __Infer<typeof BookWordVotingEnds>;
+export type DeleteRoom = __Infer<typeof DeleteRoom>;
 
-export const CurrentBookView = __t.object("CurrentBookView", {
-  carretPosition: __t.u32(),
-  get words() {
-    return __t.array(BookWordView);
+export const OngoingVote = __t.object("OngoingVote", {
+  id: __t.u64(),
+  roomId: __t.u64(),
+  participantId: __t.u64(),
+  chosenCard: __t.string(),
+});
+export type OngoingVote = __Infer<typeof OngoingVote>;
+
+export const Participant = __t.object("Participant", {
+  id: __t.u64(),
+  identity: __t.identity(),
+  roomId: __t.u64(),
+  name: __t.string(),
+  get avatar() {
+    return Avatar;
+  },
+  get role() {
+    return ParticipantRole;
   },
 });
-export type CurrentBookView = __Infer<typeof CurrentBookView>;
+export type Participant = __Infer<typeof Participant>;
 
-export const CurrentCandidateView = __t.object("CurrentCandidateView", {
-  word: __t.string(),
-  votesAmount: __t.u32(),
+// The tagged union or sum type for the algebraic type `ParticipantRole`.
+export const ParticipantRole = __t.enum("ParticipantRole", {
+  Moderator: __t.unit(),
+  Player: __t.unit(),
+  Spectator: __t.unit(),
 });
-export type CurrentCandidateView = __Infer<typeof CurrentCandidateView>;
+export type ParticipantRole = __Infer<typeof ParticipantRole>;
 
-export const CurrentVotingView = __t.object("CurrentVotingView", {
-  votingEnds: __t.timestamp(),
-  get candidates() {
-    return __t.array(CurrentCandidateView);
+export const Participation = __t.object("Participation", {
+  connectionId: __t.connectionId(),
+  participantId: __t.u64(),
+});
+export type Participation = __Infer<typeof Participation>;
+
+export const Profile = __t.object("Profile", {
+  identity: __t.identity(),
+  name: __t.string(),
+  get avatar() {
+    return Avatar;
   },
 });
-export type CurrentVotingView = __Infer<typeof CurrentVotingView>;
+export type Profile = __Infer<typeof Profile>;
 
-// The tagged union or sum type for the algebraic type `Iso3166Alpha2`.
-export const Iso3166Alpha2 = __t.enum("Iso3166Alpha2", {
-  Af: __t.unit(),
-  Al: __t.unit(),
-  Dz: __t.unit(),
-  Ad: __t.unit(),
-  Ao: __t.unit(),
-  Ag: __t.unit(),
-  Ar: __t.unit(),
-  Am: __t.unit(),
-  Au: __t.unit(),
-  At: __t.unit(),
-  Az: __t.unit(),
-  Bs: __t.unit(),
-  Bh: __t.unit(),
-  Bd: __t.unit(),
-  Bb: __t.unit(),
-  By: __t.unit(),
-  Be: __t.unit(),
-  Bz: __t.unit(),
-  Bj: __t.unit(),
-  Bt: __t.unit(),
-  Bo: __t.unit(),
-  Ba: __t.unit(),
-  Bw: __t.unit(),
-  Br: __t.unit(),
-  Bn: __t.unit(),
-  Bg: __t.unit(),
-  Bf: __t.unit(),
-  Bi: __t.unit(),
-  Kh: __t.unit(),
-  Cm: __t.unit(),
-  Ca: __t.unit(),
-  Cv: __t.unit(),
-  Cf: __t.unit(),
-  Td: __t.unit(),
-  Cl: __t.unit(),
-  Cn: __t.unit(),
-  Co: __t.unit(),
-  Km: __t.unit(),
-  Cg: __t.unit(),
-  Cd: __t.unit(),
-  Cr: __t.unit(),
-  Hr: __t.unit(),
-  Cu: __t.unit(),
-  Cy: __t.unit(),
-  Cz: __t.unit(),
-  Dk: __t.unit(),
-  Dj: __t.unit(),
-  Dm: __t.unit(),
-  Do: __t.unit(),
-  Ec: __t.unit(),
-  Eg: __t.unit(),
-  Sv: __t.unit(),
-  Gq: __t.unit(),
-  Er: __t.unit(),
-  Ee: __t.unit(),
-  Sz: __t.unit(),
-  Et: __t.unit(),
-  Fj: __t.unit(),
-  Fi: __t.unit(),
-  Fr: __t.unit(),
-  Ga: __t.unit(),
-  Gm: __t.unit(),
-  Ge: __t.unit(),
-  De: __t.unit(),
-  Gh: __t.unit(),
-  Gr: __t.unit(),
-  Gd: __t.unit(),
-  Gt: __t.unit(),
-  Gn: __t.unit(),
-  Gw: __t.unit(),
-  Gy: __t.unit(),
-  Ht: __t.unit(),
-  Hn: __t.unit(),
-  Hu: __t.unit(),
-  Is: __t.unit(),
-  In: __t.unit(),
-  Id: __t.unit(),
-  Ir: __t.unit(),
-  Iq: __t.unit(),
-  Ie: __t.unit(),
-  Il: __t.unit(),
-  It: __t.unit(),
-  Ci: __t.unit(),
-  Jm: __t.unit(),
-  Jp: __t.unit(),
-  Jo: __t.unit(),
-  Kz: __t.unit(),
-  Ke: __t.unit(),
-  Ki: __t.unit(),
-  Xk: __t.unit(),
-  Kw: __t.unit(),
-  Kg: __t.unit(),
-  La: __t.unit(),
-  Lv: __t.unit(),
-  Lb: __t.unit(),
-  Ls: __t.unit(),
-  Lr: __t.unit(),
-  Ly: __t.unit(),
-  Li: __t.unit(),
-  Lt: __t.unit(),
-  Lu: __t.unit(),
-  Mg: __t.unit(),
-  Mw: __t.unit(),
-  My: __t.unit(),
-  Mv: __t.unit(),
-  Ml: __t.unit(),
-  Mt: __t.unit(),
-  Mh: __t.unit(),
-  Mr: __t.unit(),
-  Mu: __t.unit(),
-  Mx: __t.unit(),
-  Fm: __t.unit(),
-  Md: __t.unit(),
-  Mc: __t.unit(),
-  Mn: __t.unit(),
-  Me: __t.unit(),
-  Ma: __t.unit(),
-  Mz: __t.unit(),
-  Mm: __t.unit(),
-  Na: __t.unit(),
-  Nr: __t.unit(),
-  Np: __t.unit(),
-  Nl: __t.unit(),
-  Nz: __t.unit(),
-  Ni: __t.unit(),
-  Ne: __t.unit(),
-  Ng: __t.unit(),
-  Kp: __t.unit(),
-  Mk: __t.unit(),
-  No: __t.unit(),
-  Om: __t.unit(),
-  Pk: __t.unit(),
-  Pw: __t.unit(),
-  Ps: __t.unit(),
-  Pa: __t.unit(),
-  Pg: __t.unit(),
-  Py: __t.unit(),
-  Pe: __t.unit(),
-  Ph: __t.unit(),
-  Pl: __t.unit(),
-  Pt: __t.unit(),
-  Qa: __t.unit(),
-  Ro: __t.unit(),
-  Ru: __t.unit(),
-  Rw: __t.unit(),
-  Kn: __t.unit(),
-  Lc: __t.unit(),
-  Vc: __t.unit(),
-  Ws: __t.unit(),
-  Sm: __t.unit(),
-  St: __t.unit(),
-  Sa: __t.unit(),
-  Sn: __t.unit(),
-  Rs: __t.unit(),
-  Sc: __t.unit(),
-  Sl: __t.unit(),
-  Sg: __t.unit(),
-  Sk: __t.unit(),
-  Si: __t.unit(),
-  Sb: __t.unit(),
-  So: __t.unit(),
-  Za: __t.unit(),
-  Kr: __t.unit(),
-  Ss: __t.unit(),
-  Es: __t.unit(),
-  Lk: __t.unit(),
-  Sd: __t.unit(),
-  Sr: __t.unit(),
-  Se: __t.unit(),
-  Ch: __t.unit(),
-  Sy: __t.unit(),
-  Tw: __t.unit(),
-  Tj: __t.unit(),
-  Tz: __t.unit(),
-  Th: __t.unit(),
-  Tl: __t.unit(),
-  Tg: __t.unit(),
-  To: __t.unit(),
-  Tt: __t.unit(),
-  Tn: __t.unit(),
-  Tr: __t.unit(),
-  Tm: __t.unit(),
-  Tv: __t.unit(),
-  Ug: __t.unit(),
-  Ua: __t.unit(),
-  Ae: __t.unit(),
-  Gb: __t.unit(),
-  Us: __t.unit(),
-  Uy: __t.unit(),
-  Uz: __t.unit(),
-  Vu: __t.unit(),
-  Va: __t.unit(),
-  Ve: __t.unit(),
-  Vn: __t.unit(),
-  Ye: __t.unit(),
-  Zm: __t.unit(),
-  Zw: __t.unit(),
+export const Room = __t.object("Room", {
+  id: __t.u64(),
+  code: __t.string(),
+  permanent: __t.bool(),
 });
-export type Iso3166Alpha2 = __Infer<typeof Iso3166Alpha2>;
+export type Room = __Infer<typeof Room>;
 
-export const MyVote = __t.object("MyVote", {
-  word: __t.string(),
-  get location() {
-    return Iso3166Alpha2;
+export const RoomRevealOutcome = __t.object("RoomRevealOutcome", {
+  roomId: __t.u64(),
+  timestamp: __t.timestamp(),
+  get votes() {
+    return __t.array(RoomRevealVote);
   },
 });
-export type MyVote = __Infer<typeof MyVote>;
+export type RoomRevealOutcome = __Infer<typeof RoomRevealOutcome>;
+
+export const RoomRevealVote = __t.object("RoomRevealVote", {
+  participantId: __t.u64(),
+  participantName: __t.string(),
+  chosenCardId: __t.string(),
+  chosenCardName: __t.string(),
+});
+export type RoomRevealVote = __Infer<typeof RoomRevealVote>;
 

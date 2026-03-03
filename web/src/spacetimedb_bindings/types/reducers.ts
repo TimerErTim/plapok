@@ -6,7 +6,11 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
-import VoteForWordReducer from "../vote_for_word_reducer";
+import CreateProfileReducer from "../create_profile_reducer";
+import CreateRoomReducer from "../create_room_reducer";
+import JoinRoomReducer from "../join_room_reducer";
 
-export type VoteForWordParams = __Infer<typeof VoteForWordReducer>;
+export type CreateProfileParams = __Infer<typeof CreateProfileReducer>;
+export type CreateRoomParams = __Infer<typeof CreateRoomReducer>;
+export type JoinRoomParams = __Infer<typeof JoinRoomReducer>;
 

@@ -9,14 +9,7 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import {
-  BookWordView,
-} from "./types";
 
-
-export default __t.row({
-  carretPosition: __t.u32().name("carret_position"),
-  get words() {
-    return __t.array(BookWordView);
-  },
-});
+export default {
+  code: __t.string(),
+};

@@ -9,14 +9,5 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import {
-  CurrentCandidateView,
-} from "./types";
 
-
-export default __t.row({
-  votingEnds: __t.timestamp().name("voting_ends"),
-  get candidates() {
-    return __t.array(CurrentCandidateView);
-  },
-});
+export default {};

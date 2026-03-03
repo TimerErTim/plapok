@@ -3,8 +3,8 @@
 import { hasFlag } from "country-flag-icons";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTable, useReducer } from "spacetimedb/react";
-import { tables, reducers } from "@/module_bindings";
-import type { BookWordView, Iso3166Alpha2 } from "@/module_bindings/types";
+import { tables, reducers } from "@/spacetimedb_bindings";
+import type { BookWordView, Iso3166Alpha2 } from "@/spacetimedb_bindings/types";
 import { Timestamp } from "spacetimedb";
 import {
   BookOpen,
@@ -321,7 +321,7 @@ export function MainView() {
   const detectedLocation = useDetectedLocation();
   const [book] = useTable(tables.current_book_view);
   const [myVote] = useTable(tables.my_vote);
-  const [currentWordVotes] = useTable(tables.current_word_votes);
+  const [currentWordVotes] = useTable(tables.current_word_votes)
   const submitVote = useReducer(reducers.voteForWord);
 
   console.log(detectedLocation);
