@@ -84,10 +84,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: module-wasm
-          path: spacetimedb/target/wasm32-unknown-unknown/release/module.opt.wasm
-
-      - run: ls -R spacetimedb/target/wasm32-unknown-unknown/release/
-      
+          path: spacetimedb/target/wasm32-unknown-unknown/release
+     
       - name: Publish SpacetimeDB module
         run: mise run publish:spacetimedb
         env: 
