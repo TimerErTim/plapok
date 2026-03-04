@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { DbConnection } from "@/module_bindings";
+import { DbConnection } from "@/spacetimedb_bindings";
 import { SpacetimeDBProvider } from "spacetimedb/react";
 import { MainView } from "@/components/MainView";
 
 export function AppShell() {
   const uri = process.env.NEXT_PUBLIC_SPACETIMEDB_URI ?? "http://localhost:3000";
-  const dbName = process.env.NEXT_PUBLIC_SPACETIMEDB_MODULE ?? "writing-ritual-01";
+  const dbName = process.env.NEXT_PUBLIC_SPACETIMEDB_MODULE ?? "plapok-01";
   const storage =
     typeof window !== "undefined" && window.localStorage ? window.localStorage : null;
 

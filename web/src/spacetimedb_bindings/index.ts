@@ -37,6 +37,7 @@ import {
 import CreateProfileReducer from "./create_profile_reducer";
 import CreateRoomReducer from "./create_room_reducer";
 import JoinRoomReducer from "./join_room_reducer";
+import MakeRoomPermanentReducer from "./make_room_permanent_reducer";
 
 // Import all procedure arg schemas
 
@@ -61,6 +62,7 @@ const reducersSchema = __reducers(
   __reducerSchema("create_profile", CreateProfileReducer),
   __reducerSchema("create_room", CreateRoomReducer),
   __reducerSchema("join_room", JoinRoomReducer),
+  __reducerSchema("make_room_permanent", MakeRoomPermanentReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

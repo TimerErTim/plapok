@@ -269,3 +269,26 @@ pub fn create_room(ctx: &ReducerContext) -> Result<(), String> {
 
     Ok(())
 }
+
+#[reducer]
+pub fn make_room_permanent(ctx: &ReducerContext) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+
+    let participation = ctx.db.participation().connection_id().find(connection_id).ok_or("Not in a room")?;
+    let participant = ctx.db.participant().id().find(participation.participant_id).ok_or("Participant not found")?;
+    if participant.role != ParticipantRole::Moderator {
+        return Err("Only moderators can make a room permanent".to_string());
+    }
+    
+    let room = ctx.db.room().id().find(participant.room_id).ok_or("Room not found")?;
+    log::info!("Making room {} permanent", room.code);
+    ctx.db.room().id().update(Room {
+        permanent: true,
+        ..room
+    });
+
+    Ok(())
+
+}

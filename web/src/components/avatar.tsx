@@ -1,7 +1,20 @@
 import { createAvatar } from '@dicebear/core';
 import { thumbs } from '@dicebear/collection';
+import { Profile } from '@/spacetimedb_bindings/types';
 
-function AvatarIcon({ profile, className }: { avatar: Profile, className: string }) {
+export function AvatarIcon({ profile, className }: { profile: Profile, className?: string }) {
+    let seed: string;
+    switch (profile.avatar.tag) {
+        case 'FromName':
+            seed = profile.name;
+            break;
+        case 'FromIdentity':
+            seed = profile.identity.toString();
+            break;
+        default:
+            seed = profile.avatar.tag;
+    }
+    
     const avatarResult = createAvatar(thumbs, {
         "flip": true,
         "rotate": 10,
@@ -19,7 +32,7 @@ function AvatarIcon({ profile, className }: { avatar: Profile, className: string
         "backgroundType": [
             "gradientLinear"
         ],
-        "seed": avatar
+        "seed": seed
     });
 
     return <img className={className} src={avatarResult.toDataUri()} />;
