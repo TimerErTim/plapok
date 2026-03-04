@@ -8,11 +8,13 @@ node_modules/
 web/.next/
 web/out/
 web/tsconfig.tsbuildinfo
+web/next-env.d.ts
 dist/
 dist-ssr/
 *.local
 .env
 .env.*
+web-old/
 
 # --- Debug/Logs ---
 npm-debug.log*

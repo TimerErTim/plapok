@@ -1,18 +1,19 @@
 [tools]
 "cargo:wasm-opt" = "latest"
 node = "lts"
+pnpm = "latest"
 rust = "stable"
 
 [tasks."prepare:web"]
 description = "Prepares web deps"
 dir   = "{{ config_root }}/web"
-run = "npm install"
+run = "pnpm install"
 
 [tasks."check:web"]
 description = "Run TypeScript type/compile checks"
 dir = "{{ config_root }}/web"
 depends = ["generate:spacetimedb_bindings"]
-run = "npm run test:ts"
+run = "pnpm run test:ts"
 
 [tasks."check:spacetimedb"]
 description = "Run Rust type/compile checks"
@@ -26,7 +27,7 @@ depends = ["check:web", "check:spacetimedb"]
 description = "Build frontend"
 dir = "{{ config_root }}/web"
 depends = ["generate:spacetimedb_bindings"]
-run = "npm run build"
+run = "pnpm run build"
 
 [tasks."build:spacetimedb"]
 description = "Build SpacetimeDB module"
@@ -56,7 +57,7 @@ run = [
 [tasks."dev:web"]
 description = "Start frontend development server"
 dir = "{{ config_root }}/web"
-run = "npm run dev"
+run = "pnpm run dev"
 
 [tasks."dev:spacetimedb"]
 description = "Start SpacetimeDB development server"
