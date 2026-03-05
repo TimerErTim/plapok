@@ -4,6 +4,10 @@ node = "lts"
 pnpm = "latest"
 rust = "stable"
 
+[env]
+VITE_SPACETIMEDB_URI = "https://maincloud.spacetimedb.com"
+VITE_SPACETIMEDB_MODULE = "timerertim-plapok-01"
+
 [tasks."prepare:web"]
 description = "Prepares web deps"
 dir   = "{{ config_root }}/web"
