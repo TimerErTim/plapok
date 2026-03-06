@@ -9,46 +9,9 @@ import {
     Label,
     InputGroup,
 } from "@heroui/react";
-
-// Simple Icon components to keep this standalone
-const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg
-        aria-hidden="true"
-        fill="none"
-        focusable="false"
-        height="1em"
-        role="presentation"
-        viewBox="0 0 24 24"
-        width="1em"
-        {...props}
-    >
-        <path
-            d="M16.835 6.91821L15.419 8.33421L18.583 11.5H3V13.5H18.583L15.419 16.6662L16.835 18.0822L22.417 12.5002L16.835 6.91821Z"
-            fill="currentColor"
-        />
-    </svg>
-);
-
-const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg
-        aria-hidden="true"
-        fill="none"
-        focusable="false"
-        height="1em"
-        role="presentation"
-        viewBox="0 0 24 24"
-        width="1em"
-        {...props}
-    >
-        <path
-            d="M12 5V19M5 12H19"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </svg>
-);
+import { config } from "@/config";
+import { FaArrowRight, FaPlus } from "react-icons/fa";
+import { useLocation } from "react-router";
 
 export default function PlanningPokerLanding() {
     const [roomCode, setRoomCode] = useState("");
@@ -91,28 +54,26 @@ export default function PlanningPokerLanding() {
                     {/* Join Room Section */}
                     <div className="flex flex-col gap-2">
                         <Label className="text-default-600 font-medium">Join a Session</Label>
-                        <InputGroup>
-                            <InputGroup.Input
+                        <div className="flex flex-row items-center gap-2">
+                            <Input
                                 autoFocus
                                 placeholder="Enter room code..."
                                 value={roomCode}
                                 onChange={(e) => setRoomCode(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="bg-default-100/50 hover:bg-default-100 transition-colors pr-1"
+                                className="bg-default-100/50 hover:bg-default-100 transition-colors pr-1 grow"
                             />
-                            <InputGroup.Suffix className="pr-1">
                                 <Button
                                     isIconOnly
-                                    size="sm"
+                                    size="md"
                                     isDisabled={!roomCode}
                                     variant="primary"
                                     onPress={handleJoin}
                                 >
-                                    <ArrowRightIcon />
+                                    <FaArrowRight />
                                 </Button>
-                            </InputGroup.Suffix>
 
-                        </InputGroup>
+                        </div>
                         <div className="flex justify-end px-1">
                             <span className="text-tiny text-default-400">Press <Kbd className="mx-1">
                                 <Kbd.Abbr keyValue="enter" />
@@ -134,7 +95,7 @@ export default function PlanningPokerLanding() {
                         className="w-full font-medium"
                         onPress={handleCreate}
                     >
-                        <PlusIcon />
+                        <FaPlus />
                         Create New Room
                     </Button>
                 </Card.Content>

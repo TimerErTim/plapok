@@ -73,6 +73,7 @@ Create two files for local deployment:
 2. `mise.local.toml` 
     ```toml
     [env]
+    VITE_PUBLIC_URL = "http://localhost:3008"
     VITE_SPACETIMEDB_URI = "http://localhost:3000"
     VITE_SPACETIMEDB_MODULE = "plapok-01"
     ```

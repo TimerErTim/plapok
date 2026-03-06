@@ -271,6 +271,20 @@ pub fn create_room(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
+pub fn profile_set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
+    let profile = ctx.db.profile().identity().find(ctx.sender()).ok_or("User has not yet created a profile")?;
+    ctx.db.profile().identity().update(Profile { name: name, ..profile });
+    Ok(())
+}
+
+#[reducer]
+pub fn profile_set_avatar(ctx: &ReducerContext, avatar: Avatar) -> Result<(), String> {
+    let profile = ctx.db.profile().identity().find(ctx.sender()).ok_or("User has not yet created a profile")?;
+    ctx.db.profile().identity().update(Profile { avatar: avatar, ..profile });
+    Ok(())
+}
+
+#[reducer]
 pub fn make_room_permanent(ctx: &ReducerContext) -> Result<(), String> {
     let Some(connection_id) = ctx.connection_id() else {
         return Err("Not connected".to_string());
@@ -290,5 +304,4 @@ pub fn make_room_permanent(ctx: &ReducerContext) -> Result<(), String> {
     });
 
     Ok(())
-
 }

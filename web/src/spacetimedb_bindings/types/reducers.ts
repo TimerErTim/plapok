@@ -10,9 +10,13 @@ import CreateProfileReducer from "../create_profile_reducer";
 import CreateRoomReducer from "../create_room_reducer";
 import JoinRoomReducer from "../join_room_reducer";
 import MakeRoomPermanentReducer from "../make_room_permanent_reducer";
+import ProfileSetAvatarReducer from "../profile_set_avatar_reducer";
+import ProfileSetNameReducer from "../profile_set_name_reducer";
 
 export type CreateProfileParams = __Infer<typeof CreateProfileReducer>;
 export type CreateRoomParams = __Infer<typeof CreateRoomReducer>;
 export type JoinRoomParams = __Infer<typeof JoinRoomReducer>;
 export type MakeRoomPermanentParams = __Infer<typeof MakeRoomPermanentReducer>;
+export type ProfileSetAvatarParams = __Infer<typeof ProfileSetAvatarReducer>;
+export type ProfileSetNameParams = __Infer<typeof ProfileSetNameReducer>;
 

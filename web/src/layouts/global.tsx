@@ -3,46 +3,18 @@ import {
   Button,
   linkVariants,
 } from "@heroui/react";
-import { Link } from "react-router";
-import { FaGithub } from "react-icons/fa";
-
-// 1. Simple Theme Switcher Icon (Sun/Moon)
-// Ideally, use next-themes or your preferred theme context here
-const ThemeIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    height="24"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    strokeWidth="2"
-    viewBox="0 0 24 24"
-    width="24"
-  >
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-);
-
-const LogoIcon = () => (
-  <svg
-    fill="none"
-    height="32"
-    viewBox="0 0 32 32"
-    width="32"
-    className="text-primary"
-  >
-    <path
-      clipRule="evenodd"
-      d="M17.6482 10.1305L15.8785 7.02583L7.02979 22.5499H10.5278L17.6482 10.1305ZM19.8798 14.0457L18.11 17.1983L19.394 19.4511H16.8453L15.1056 22.5499H24.7275L19.8798 14.0457Z"
-      fill="currentColor"
-      fillRule="evenodd"
-    />
-  </svg>
-);
+import { Link, useLocation } from "react-router";
+import { FaArrowLeft, FaGithub } from "react-icons/fa";
+import { cx } from "tailwind-variants";
+import ProfileIcon from "@/components/profileIcon";
 
 
 export function GlobalLayout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  // Check if we are on the home page
+  const isRoomPage = location.pathname.startsWith("/room");
+
   return (
     <div className="relative flex h-full flex-col bg-background font-sans text-foreground antialiased">
 
@@ -54,16 +26,20 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
 
           {/* Brand / Logo */}
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity h-full">
-            <img src="/plapok.svg" alt="Plapok" className="h-full -my-2" />
-          </Link>
-
-          {/* Right Side Actions */}
-          <nav className="flex items-center gap-4">
+          <nav className="flex items-center gap-4 h-full">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity h-full text-accent-hover hover:shadow-xs">
+              <FaArrowLeft className={cx("text-xl", !isRoomPage && "invisible")} />
+              <img src="/plapok.svg" alt="Plapok" className="h-full -my-2" />
+            </Link>
             <Link to="https://github.com/timerertim/plapok" target="_blank" className={linkVariants({}).base()}>
-              <FaGithub className="text-2xl" />
+              Star on <FaGithub className="text-lg ml-2" />
             </Link>
           </nav>
+
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-2">
+            <ProfileIcon />
+          </div>
         </div>
       </header>
 

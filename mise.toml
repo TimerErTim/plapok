@@ -5,6 +5,7 @@ pnpm = "latest"
 rust = "stable"
 
 [env]
+VITE_PUBLIC_URL = "https://plapok.timerertim.eu"
 VITE_SPACETIMEDB_URI = "https://maincloud.spacetimedb.com"
 VITE_SPACETIMEDB_MODULE = "timerertim-plapok-01"
 
