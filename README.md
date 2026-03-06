@@ -1,116 +1,101 @@
-# 🕯️ The Ritual
+# 🚀 Plapok
 
-> *"The pages are empty. History begins with you."*
+<p align="center">
+  <a href="https://plapok.timerertim.eu"><img src="./web/public/plapok.svg" alt="Plapok logo" width="128" /></a>
+</p>
 
-**The Ritual** is a massively multiplayer collaborative writing experiment. It is a real-time application where users from around the world vote on the next word of a never-ending story.
 
-Built with **Next.js**, **Tailwind CSS**, and **SpacetimeDB**, it combines a "Dark Academia" aesthetic with high-performance real-time state synchronization.
+**Plapok** is a beautiful, minimal planning poker application designed for agile teams who value speed and simplicity. Built with **React**, **HeroUI v3**, and powered by **SpacetimeDB 2.0**, it offers real-time synchronization without the overhead of traditional state management.
 
-## ✨ Features
+## 🛠 Tech Stack
 
-### 📖 The Book (The History)
+* **Frontend**: React (TSX) + Vite
+* **UI Components**: [HeroUI v3](https://v3.heroui.com/) (formerly NextUI)
+* **Styling**: Tailwind CSS
+* **Backend/Database**: [SpacetimeDB 2.0](https://spacetimedb.com/) (Rust-based server modules)
+* **Runtime/Env Management**: `mise` (mise-en-place)
 
-* **Infinite Chronicle:** A persistent, scrolling view of the story so far.
-* **Deep Lore (Metadata):** Hover over any accepted word to reveal its "stratigraphy"—the exact date it was chosen and the vote distribution of the candidates it defeated.
-* **Smart Positioning:** Tooltips use intelligent edge-detection to ensure data is always visible, never clipped.
+---
 
-### ⚔️ The Arena (The Present)
+## 🏗 Setup & Mise-en-place
 
-* **Visualized Democracy:** A dynamic "Word Cloud" where candidate words grow in size based on their vote share.
-* **Real-time Updates:** Watch votes come in live as the timer counts down.
-* **Bandwagoning:** An autocomplete system suggests currently trending words, allowing users to consolidate votes easily.
+We use **mise** to ensure every contributor has the exact same versions of Node, Rust, and the SpacetimeDB CLI.
 
-### 🌍 The Assembly (The Users)
+### 1. Install mise
 
-* **Geolocation Tags:** Votes are stamped with the user's country flag (detected via IP or browser locale), adding a layer of global context to the collaboration.
-* **Ritualistic UI:** A custom design system built on Stone, Amber, and Parchment tones, utilizing `lucide-react` icons and serif typography.
+If you don't have it yet:
 
-## 🛠️ Tech Stack
-
-* **Frontend:** [Next.js 14](https://nextjs.org/) (App Router), React, TypeScript.
-* **Styling:** Tailwind CSS (Custom color palette).
-* **Backend & DB:** [SpacetimeDB](https://spacetimedb.com/) (Rust-based real-time database).
-* **Utilities:** `country-flag-icons` for geolocation visuals.
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-1. **Node.js** (v18+)
-2. **SpacetimeDB CLI** (installed and running)
-
-### Installation
-
-1. **Clone the repository:**
 ```bash
-git clone https://github.com/yourusername/the-ritual.git
-cd the-ritual
-
+curl https://mise.jdx.dev/install.sh | sh
 ```
 
+### 2. Trust and Install Tools
 
-2. **Install dependencies:**
+Clone the repo and run:
+
 ```bash
-npm install
-# or
-yarn install
-
+# Setup all runtimes (Node, Rust, SpacetimeDB CLI)
+mise trust
+mise run prepare:web
 ```
 
+---
 
-3. **Start the SpacetimeDB Backend:**
-Ensure your SpacetimeDB instance is running and the module is published.
+## 🚀 Quick Start
+
+### Backend (SpacetimeDB)
+
+The backend logic lives in the `/server` directory and is written in Rust.
+
+1. **Start SpacetimeDB locally**:
 ```bash
 spacetime start
-spacetime publish -c # Publish your rust module
-
 ```
 
+### Frontend
 
-4. **Run the Frontend:**
+1. **Install dependencies**:
 ```bash
-npm run dev
-
+mise run prepare:web
 ```
 
+### Configuration
 
-5. **Join the Ritual:**
-Open [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) in your browser.
+Create two files for local deployment:
 
-## 📂 Project Structure
+1. `spacetime.local.json` 
+    ```json
+    {
+        "server": "local",
+        "database": "plapok-01"
+    }
+    ```
+2. `mise.local.toml` 
+    ```toml
+    [env]
+    VITE_SPACETIMEDB_URI = "http://localhost:3000"
+    VITE_SPACETIMEDB_MODULE = "plapok-01"
+    ```
 
+
+**Run the dev environment**:
+```bash
+mise run dev
 ```
-.
-├── src/
-│   ├── app/                # Next.js App Router
-│   ├── components/
-│   │   ├── RitualView.tsx  # Main game logic and UI
-│   │   └── ...
-│   ├── module_bindings/    # Generated SpacetimeDB TypeScript bindings
-│   └── ...
-├── public/                 # Static assets (favicons, etc.)
-└── ...
 
-```
+---
 
-## 🎨 Design Philosophy
+## 🎮 Features
 
-The UI is designed to feel like an ancient interface or a digital stone tablet.
+* **No Accounts**: Just enter a name and a room code.
+* **Real-time**: Powered by SpacetimeDB reducers; no WebSockets to manually manage.
+* **Minimalist UI**: Pastel matte aesthetics with light/dark mode support.
+* **Responsive**: Designed for mobile standby and desktop "second-screen" use.
 
-* **Primary Colors:** `stone-950` (Background), `stone-200` (Text).
-* **Accent:** `amber-500` to `amber-700` (representing fire/gold/importance).
-* **Interactions:** Hover states glow; successful actions feel weighty.
+---
 
-## 🤝 Contributing
+## 📜 Contributing
 
-The Ritual is open to acolytes. If you wish to improve the UI or optimize the backend logic:
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📜 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
+1. Check out a new branch: `git checkout -b feature/cool-feature`
+2. Ensure `mise` has your environment synced.
+3. Submit a PR!

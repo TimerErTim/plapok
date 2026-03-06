@@ -1,0 +1,5 @@
+- [ ] Feedback button
+- [ ] Current task description in room
+- [ ] Deck and voting
+- [ ] Player ranks
+- [ ] Mobile view friendly
