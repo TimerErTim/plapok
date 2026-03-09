@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use fxhash::FxHashMap;
 use rand::Rng;
 use spacetimedb::{
     ConnectionId, DbContext, ReducerContext, ScheduleAt, Table, TryInsertError, rand, reducer,
