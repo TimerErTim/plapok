@@ -45,13 +45,14 @@ jobs:
       - name: Build
         run: MISE_JOBS=1 mise run build
         env:
-          NEXT_PUBLIC_SPACETIMEDB_URI: https://maincloud.spacetimedb.com
-          NEXT_PUBLIC_SPACETIMEDB_MODULE: timerertim-writing-ritual-01
+          VITE_SPACETIMEDB_URI: https://maincloud.spacetimedb.com
+          VITE_SPACETIMEDB_MODULE: timerertim-plapok-01
+          VITE_PUBLIC_URL: https://plapok.timerertim.eu
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: web/out
+          path: web/dist
 
       - name: Upload SpacetimeDB wasm artifact
         uses: actions/upload-artifact@v4
