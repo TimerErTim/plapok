@@ -1,10 +1,12 @@
 import { invoke } from "@/common";
 import { Profile } from "@/spacetimedb_bindings/types";
-import { thumbs } from "@dicebear/collection";
+import { avataaarsNeutral, thumbs } from "@dicebear/collection";
 import { createAvatar } from "@dicebear/core";
 import { useMemo } from "react";
 
-export default function useAvatar(profile: Profile | null) {
+type ProfileProps = Pick<Profile, "avatar" | "name" | "identity">
+
+export default function useAvatar(profile: ProfileProps | null) {
     const seed = invoke(() => {
         if (!profile) {
             return null
@@ -19,32 +21,27 @@ export default function useAvatar(profile: Profile | null) {
                 return profile.avatar.tag
         }
     })
-    
+
     const avatar = useMemo(() => {
         if (!seed) {
             return null
         }
-    
-        return createAvatar(thumbs, {
-            "flip": true,
-            "rotate": 10,
+
+        return createAvatar(avataaarsNeutral, {
             "backgroundColor": [
-                "0a5b83",
-                "69d2e7",
-                "f1f4dc",
-                "f88c49",
-                "ffd5dc",
-                "ffdfbf",
-                "d1d4f9",
+                "ae5d29",
+                "f8d25c",
+                "fd9841",
+                "b6e3f4",
                 "c0aede",
-                "b6e3f4"
+                "ffdfbf",
+                "614335",
+                "0a835b",
             ],
-            "backgroundType": [
-                "gradientLinear"
-            ],
+            scale: 80,
             "seed": seed
         });
-      }, [seed]);
+    }, [seed]);
 
     return avatar
 }

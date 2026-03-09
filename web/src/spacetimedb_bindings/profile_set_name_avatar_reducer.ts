@@ -15,7 +15,8 @@ import {
 } from "./types";
 
 export default {
+  name: __t.option(__t.string()),
   get avatar() {
-    return Avatar;
+    return __t.option(Avatar);
   },
 };

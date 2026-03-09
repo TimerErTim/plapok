@@ -60,6 +60,7 @@ pub enum ParticipantRole {
 }
 
 #[table(accessor = participant, private,
+    index(accessor = by_identity, btree(columns = [identity])),
     index(accessor = by_room_id, btree(columns = [room_id])),
     index(accessor = by_identity_room_id, btree(columns = [identity, room_id]))
 )]

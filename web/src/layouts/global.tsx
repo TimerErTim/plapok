@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Button,
   linkVariants,
@@ -7,6 +7,7 @@ import { Link, useLocation } from "react-router";
 import { FaArrowLeft, FaGithub } from "react-icons/fa";
 import { cx } from "tailwind-variants";
 import ProfileIcon from "@/components/profileIcon";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 
 export function GlobalLayout({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,24 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
 
   // Check if we are on the home page
   const isRoomPage = location.pathname.startsWith("/room");
+
+  // Apply theming
+  const [currentTheme, setCurrentTheme] = useLocalStorage<string>("heroui-theme", "light")
+  useEffect(() => {
+    const mq = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    );
+  
+    if (mq.matches) {
+      setCurrentTheme("dark");
+    }
+  
+    // This callback will fire if the perferred color scheme changes without a reload
+    mq.addEventListener("change", (evt) => setCurrentTheme(evt.matches ? "dark" : "light"));
+  }, []);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", currentTheme)
+  }, [currentTheme])
 
   return (
     <div className="relative flex h-full flex-col bg-background font-sans text-foreground antialiased">

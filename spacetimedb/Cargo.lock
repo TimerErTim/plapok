@@ -422,6 +422,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "plapok"
+version = "0.1.0"
+dependencies = [
+ "fxhash",
+ "log",
+ "spacetimedb",
+]
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -952,15 +961,6 @@ dependencies = [
  "serde_json",
  "unicode-xid",
  "wasmparser",
-]
-
-[[package]]
-name = "writing_ritual"
-version = "0.1.0"
-dependencies = [
- "fxhash",
- "log",
- "spacetimedb",
 ]
 
 [[package]]

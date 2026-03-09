@@ -13,7 +13,7 @@ use crate::{
         delete_room, ongoing_vote, participant, participation, profile, room,
         room_reveal_outcome,
     },
-    tweaks::get_deletion_time,
+    tweaks::{get_deletion_time, validate_profile_name},
 };
 
 #[reducer()]
@@ -271,16 +271,27 @@ pub fn create_room(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-pub fn profile_set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let profile = ctx.db.profile().identity().find(ctx.sender()).ok_or("User has not yet created a profile")?;
-    ctx.db.profile().identity().update(Profile { name: name, ..profile });
-    Ok(())
-}
+pub fn profile_set_name_avatar(ctx: &ReducerContext, name: Option<String>, avatar: Option<Avatar>) -> Result<(), String> {
+    let mut profile = ctx.db.profile().identity().find(ctx.sender()).ok_or("User has not yet created a profile")?;
+    if let Some(name) = name {
+        validate_profile_name(&name)?;
+        profile.name = name;
+    }
+    if let Some(avatar) = avatar {
+        profile.avatar = avatar;
+    }
+    log::info!("Updating profile user {}", ctx.sender());
+    let profile = ctx.db.profile().identity().update(profile);
 
-#[reducer]
-pub fn profile_set_avatar(ctx: &ReducerContext, avatar: Avatar) -> Result<(), String> {
-    let profile = ctx.db.profile().identity().find(ctx.sender()).ok_or("User has not yet created a profile")?;
-    ctx.db.profile().identity().update(Profile { avatar: avatar, ..profile });
+    // Find all active rooms for this profile
+    let participants = ctx.db.participant().by_identity().filter(profile.identity);
+    for participant in participants {
+        let Some(room) = ctx.db.room().id().find(participant.room_id) else {
+            continue;
+        };
+        synchronize_participant_with_profile(ctx, &room, &profile)?;
+    }
+
     Ok(())
 }
 

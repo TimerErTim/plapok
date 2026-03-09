@@ -11,23 +11,20 @@ import {
 } from "@heroui/react";
 import { config } from "@/config";
 import { FaArrowRight, FaPlus } from "react-icons/fa";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 export default function PlanningPokerLanding() {
     const [roomCode, setRoomCode] = useState("");
+    const navigate = useNavigate();
 
     // Placeholder navigation logic - replace with your Router (e.g., Next.js useRouter)
     const handleJoin = () => {
         if (!roomCode) return;
-        console.log(`Navigating to /room/${roomCode}`);
-        window.location.href = `/room/${roomCode}`;
+        navigate(`/room/${roomCode}`);
     };
 
     const handleCreate = () => {
-        // Generate a random ID or hit an API endpoint here
-        const newRoomId = Math.random().toString(36).substring(7);
-        console.log(`Creating room ${newRoomId}`);
-        window.location.href = `/room/${newRoomId}`;
+        navigate(`/new`);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -61,7 +58,7 @@ export default function PlanningPokerLanding() {
                                 value={roomCode}
                                 onChange={(e) => setRoomCode(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="bg-default-100/50 hover:bg-default-100 transition-colors pr-1 grow"
+                                className="bg-default-100/50 hover:bg-default-100 transition-colors pr-1 grow min-w-0 "
                             />
                                 <Button
                                     isIconOnly
@@ -74,7 +71,7 @@ export default function PlanningPokerLanding() {
                                 </Button>
 
                         </div>
-                        <div className="flex justify-end px-1">
+                        <div className="justify-end px-1 hidden md:flex">
                             <span className="text-tiny text-default-400">Press <Kbd className="mx-1">
                                 <Kbd.Abbr keyValue="enter" />
                                 <Kbd.Content>Enter</Kbd.Content>

@@ -10,3 +10,10 @@ pub fn get_deletion_time(current_time: Timestamp, room: &Room) -> Timestamp {
         false => current_time + Duration::from_hours(24), // 1 day after last disconnect
     }
 }
+
+pub fn validate_profile_name(name: &str) -> Result<(), String> {
+    if name.len() < 2 || name.len() > 20 {
+        return Err("Name must be between 2 and 20 characters".to_string());
+    }
+    Ok(())
+}
