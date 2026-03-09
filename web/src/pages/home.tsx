@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Card,
     CardHeader,
@@ -9,13 +9,25 @@ import {
     Label,
     InputGroup,
 } from "@heroui/react";
-import { config } from "@/config";
 import { FaArrowRight, FaPlus } from "react-icons/fa";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
+import { reducers } from "@/spacetimedb_bindings";
+import { useReducer } from "spacetimedb/react";
+import useConnectionRoom from "@/hooks/useConnectionRoom";
 
 export default function PlanningPokerLanding() {
+    const disconnectCurrentRoom = useReducer(reducers.disconnectCurrentRoom)
+    const { connectedRoom, roomReady } = useConnectionRoom()
     const [roomCode, setRoomCode] = useState("");
     const navigate = useNavigate();
+
+    // Disconnect from current room when back to title
+    useEffect(() => {
+        if (roomReady && !connectedRoom) {
+            console.debug("disconnecting current room")
+            disconnectCurrentRoom()
+        }
+    }, [])
 
     // Placeholder navigation logic - replace with your Router (e.g., Next.js useRouter)
     const handleJoin = () => {

@@ -241,6 +241,20 @@ pub fn create_profile(ctx: &ReducerContext, name: String, avatar: Avatar) -> Res
 }
 
 #[reducer]
+pub fn disconnect_current_room(ctx: &ReducerContext) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+    log::info!("Disconnecting current room for connection {}", connection_id);
+    let Some(participation) = ctx.db.participation().connection_id().find(connection_id) else {
+        log::debug!("Connection {} not in a room", connection_id);
+        return Ok(());
+    };
+    unregister_participation(ctx, participation, None)?;
+    Ok(())
+}
+
+#[reducer]
 pub fn create_room(ctx: &ReducerContext) -> Result<(), String> {
     let profile = ctx
         .db
@@ -256,6 +270,7 @@ pub fn create_room(ctx: &ReducerContext) -> Result<(), String> {
             id: 0,
             code,
             permanent: false,
+            current_topic: "".to_string(),
         }) {
             Err(TryInsertError::UniqueConstraintViolation(_)) => { /* Another try */ }
             result => break result.unwrap(),

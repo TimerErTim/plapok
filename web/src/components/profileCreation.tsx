@@ -16,7 +16,7 @@ export default function ProfileCreation() {
     const [name, setName] = useState("")
     const [avatar, setAvatar] = useState<AvatarType>(AvatarType.FromIdentity)
     const [error, setError] = useState<string | null>(null)
-    const avatarResult = identity ? useAvatar({ name, avatar, identity }) : null
+    const avatarResult = useAvatar(identity ? { name, avatar, identity } : null)
 
     function onSubmit(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
@@ -61,7 +61,6 @@ export default function ProfileCreation() {
                         <div className="flex flex-row items-center justify-center">
                             <Avatar className="size-24 rounded-lg shadow-lg" id="avatar">
                                 <Avatar.Image src={avatarResult?.toDataUri()} />
-                                <Avatar.Fallback>?</Avatar.Fallback>
                             </Avatar>
                         </div>
                         <div className="flex flex-row items-center gap-2 mx-8">

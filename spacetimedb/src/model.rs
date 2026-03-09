@@ -1,5 +1,7 @@
+use rustc_hash::FxHashMap;
 use spacetimedb::{
-    AnonymousViewContext, ConnectionId, Identity, ScheduleAt, SpacetimeType, Timestamp, ViewContext, table, view
+    AnonymousViewContext, ConnectionId, Identity, ScheduleAt, SpacetimeType, Timestamp,
+    ViewContext, table, view,
 };
 
 use crate::use_cases::handle_delete_room;
@@ -37,7 +39,7 @@ pub enum Avatar {
     Steve,
     Tina,
     FromName,
-    FromIdentity
+    FromIdentity,
 }
 
 #[table(accessor = room, private,
@@ -50,6 +52,7 @@ pub struct Room {
     #[unique]
     pub code: String,
     pub permanent: bool, // If true, room is permanent and will not be deleted upon last participant leaving
+    pub current_topic: String,
 }
 
 #[derive(SpacetimeType, Clone, Debug, PartialEq)]
@@ -106,7 +109,6 @@ pub struct RoomRevealOutcome {
 pub struct RoomRevealVote {
     pub participant_id: u64,
     pub participant_name: String,
-    pub chosen_card_id: String,
     pub chosen_card_name: String,
 }
 
@@ -127,4 +129,72 @@ pub struct OngoingVote {
 #[view(accessor = my_profile, public)]
 pub fn my_profile(ctx: &ViewContext) -> Option<Profile> {
     ctx.db.profile().identity().find(ctx.sender())
+}
+
+#[derive(SpacetimeType)]
+pub struct RoomView {
+    pub code: String,
+    pub permanent: bool,
+    pub current_topic: String,
+    pub participants: Vec<ParticipantView>,
+    pub vote_history: Vec<VoteResultRecordView>,
+    pub my_connections: Vec<ConnectionId>,
+}
+
+#[derive(SpacetimeType)]
+pub struct VoteResultRecordView {
+    pub timestamp: Timestamp,
+    pub topic: String,
+    //pub votes: Vec<VoteResultView>,
+}
+
+#[derive(SpacetimeType)]
+pub struct ParticipantView {
+    pub id: u64,
+    pub name: String,
+    pub avatar: Avatar,
+    pub role: ParticipantRole,
+    pub vote_state: VoteStateView,
+}
+
+#[derive(SpacetimeType)]
+pub enum VoteStateView {
+    NotVoted,
+    Voted,
+    Revealed(String),
+}
+
+#[view(accessor = my_participating_rooms, public)]
+pub fn my_participating_rooms(ctx: &ViewContext) -> Vec<RoomView> {
+    let mut all_rooms = FxHashMap::default();
+    for participant in ctx.db.participant().by_identity().filter(ctx.sender()) {
+        for active_participation in ctx
+            .db
+            .participation()
+            .by_participant_id()
+            .filter(participant.id)
+        {
+            let room = all_rooms.entry(participant.room_id).or_insert_with(|| {
+                let room = ctx.db.room().id().find(participant.room_id).unwrap();
+                // Find all other active participants in the room
+                let all_active_participants = ctx.db.participant().by_room_id().filter(participant.room_id).filter(|participant| ctx.db.participation().by_participant_id().filter(participant.id).count() > 0);
+                RoomView {
+                    code: room.code,
+                    permanent: room.permanent,
+                    current_topic: room.current_topic,
+                    participants: all_active_participants.map(|participant| ParticipantView {
+                        id: participant.id,
+                        name: participant.name,
+                        avatar: participant.avatar,
+                        role: participant.role,
+                        vote_state: VoteStateView::NotVoted,
+                    }).collect(),
+                    vote_history: vec![],
+                    my_connections: vec![],
+                }
+            });
+            room.my_connections.push(active_participation.connection_id);
+        }
+    }
+    all_rooms.into_values().collect()
 }

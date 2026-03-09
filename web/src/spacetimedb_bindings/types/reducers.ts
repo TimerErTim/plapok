@@ -8,12 +8,14 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import CreateProfileReducer from "../create_profile_reducer";
 import CreateRoomReducer from "../create_room_reducer";
+import DisconnectCurrentRoomReducer from "../disconnect_current_room_reducer";
 import JoinRoomReducer from "../join_room_reducer";
 import MakeRoomPermanentReducer from "../make_room_permanent_reducer";
 import ProfileSetNameAvatarReducer from "../profile_set_name_avatar_reducer";
 
 export type CreateProfileParams = __Infer<typeof CreateProfileReducer>;
 export type CreateRoomParams = __Infer<typeof CreateRoomReducer>;
+export type DisconnectCurrentRoomParams = __Infer<typeof DisconnectCurrentRoomReducer>;
 export type JoinRoomParams = __Infer<typeof JoinRoomReducer>;
 export type MakeRoomPermanentParams = __Infer<typeof MakeRoomPermanentReducer>;
 export type ProfileSetNameAvatarParams = __Infer<typeof ProfileSetNameAvatarReducer>;

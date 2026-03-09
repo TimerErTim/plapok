@@ -73,6 +73,21 @@ export const ParticipantRole = __t.enum("ParticipantRole", {
 });
 export type ParticipantRole = __Infer<typeof ParticipantRole>;
 
+export const ParticipantView = __t.object("ParticipantView", {
+  id: __t.u64(),
+  name: __t.string(),
+  get avatar() {
+    return Avatar;
+  },
+  get role() {
+    return ParticipantRole;
+  },
+  get voteState() {
+    return VoteStateView;
+  },
+});
+export type ParticipantView = __Infer<typeof ParticipantView>;
+
 export const Participation = __t.object("Participation", {
   connectionId: __t.connectionId(),
   participantId: __t.u64(),
@@ -92,6 +107,7 @@ export const Room = __t.object("Room", {
   id: __t.u64(),
   code: __t.string(),
   permanent: __t.bool(),
+  currentTopic: __t.string(),
 });
 export type Room = __Infer<typeof Room>;
 
@@ -107,8 +123,35 @@ export type RoomRevealOutcome = __Infer<typeof RoomRevealOutcome>;
 export const RoomRevealVote = __t.object("RoomRevealVote", {
   participantId: __t.u64(),
   participantName: __t.string(),
-  chosenCardId: __t.string(),
   chosenCardName: __t.string(),
 });
 export type RoomRevealVote = __Infer<typeof RoomRevealVote>;
+
+export const RoomView = __t.object("RoomView", {
+  code: __t.string(),
+  permanent: __t.bool(),
+  currentTopic: __t.string(),
+  get participants() {
+    return __t.array(ParticipantView);
+  },
+  get voteHistory() {
+    return __t.array(VoteResultRecordView);
+  },
+  myConnections: __t.array(__t.connectionId()),
+});
+export type RoomView = __Infer<typeof RoomView>;
+
+export const VoteResultRecordView = __t.object("VoteResultRecordView", {
+  timestamp: __t.timestamp(),
+  topic: __t.string(),
+});
+export type VoteResultRecordView = __Infer<typeof VoteResultRecordView>;
+
+// The tagged union or sum type for the algebraic type `VoteStateView`.
+export const VoteStateView = __t.enum("VoteStateView", {
+  NotVoted: __t.unit(),
+  Voted: __t.unit(),
+  Revealed: __t.string(),
+});
+export type VoteStateView = __Infer<typeof VoteStateView>;
 
