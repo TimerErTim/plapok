@@ -32,7 +32,10 @@ depends = ["check:web", "check:spacetimedb"]
 description = "Build frontend"
 dir = "{{ config_root }}/web"
 depends = ["generate:spacetimedb_bindings"]
-run = "pnpm run build"
+run = [
+    "pnpm run build",
+    "cp dist/index.html dist/404.html"  # For Github Pages
+]
 
 [tasks."build:spacetimedb"]
 description = "Build SpacetimeDB module"
