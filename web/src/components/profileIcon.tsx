@@ -92,7 +92,6 @@ export default function ProfileIcon({ className }: { className?: string }) {
         <div className="flex flex-row gap-2">
         <Avatar className="rounded-lg size-16 shadow-lg">
             {editedAvatarResult && <Avatar.Image src={editedAvatarResult.toDataUri()} />}
-            <Avatar.Fallback>?</Avatar.Fallback>
           </Avatar>
           <div className="flex flex-row gap-2 grow items-center justify-between">
             <Button variant='ghost' isIconOnly size='sm' onPress={handleAvatarSetPrevious}><FaChevronLeft/></Button>
