@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use rand::Rng;
+use rustc_hash::FxHashMap;
 use spacetimedb::{
     ConnectionId, DbContext, ReducerContext, ScheduleAt, Table, TryInsertError, rand, reducer,
     spacetimedb_lib::connection_id,
@@ -8,11 +9,9 @@ use spacetimedb::{
 
 use crate::{
     model::{
-        Avatar, DeleteRoom, Participant, ParticipantRole, Participation, Profile, Room,
-        delete_room, ongoing_vote, participant, participation, profile, room,
-        room_reveal_outcome,
+        Avatar, DeckCard, DeleteRoom, OngoingVote, Participant, ParticipantRole, Participation, Profile, Room, RoomRevealOutcome, RoomRevealVote, delete_room, ongoing_vote, participant, participation, profile, room, room_reveal_outcome
     },
-    tweaks::{get_deletion_time, validate_profile_name},
+    tweaks::{default_deck, get_deletion_time, validate_profile_name},
 };
 
 #[reducer()]
@@ -32,21 +31,18 @@ pub fn handle_delete_room(ctx: &ReducerContext, row: DeleteRoom) -> Result<(), S
         log::warn!("Room {} was already deleted", room.code);
     }
 
+    let deleted_participants_count = ctx.db.participant().by_room_id().filter(room.id).map(|participant| {
+        ctx.db.ongoing_vote().participant_id().delete(participant.id);
+        ctx.db.participant().delete(participant);
+    }).count();
+
     let deleted_particip_count = ctx.db.participant().by_room_id().delete(room.id);
     log::debug!(
         "Deleted {} participants from room {}",
         deleted_particip_count,
         room.code
     );
-
-    let deleted_votes_count = ctx.db.ongoing_vote().by_room_id().delete(room.id);
-    log::debug!(
-        "Deleted {} votes from room {}",
-        deleted_votes_count,
-        room.code
-    );
-
-    let deleted_reveal_outcome_count = ctx.db.room_reveal_outcome().room_id().delete(room.id);
+    let deleted_reveal_outcome_count = ctx.db.room_reveal_outcome().by_room_id().delete(room.id);
     log::debug!(
         "Deleted {} reveal outcomes from room {}",
         deleted_reveal_outcome_count,
@@ -245,7 +241,10 @@ pub fn disconnect_current_room(ctx: &ReducerContext) -> Result<(), String> {
     let Some(connection_id) = ctx.connection_id() else {
         return Err("Not connected".to_string());
     };
-    log::info!("Disconnecting current room for connection {}", connection_id);
+    log::info!(
+        "Disconnecting current room for connection {}",
+        connection_id
+    );
     let Some(participation) = ctx.db.participation().connection_id().find(connection_id) else {
         log::debug!("Connection {} not in a room", connection_id);
         return Ok(());
@@ -270,7 +269,9 @@ pub fn create_room(ctx: &ReducerContext) -> Result<(), String> {
             id: 0,
             code,
             permanent: false,
+            revealed: false,
             current_topic: "".to_string(),
+            current_deck: default_deck(),
         }) {
             Err(TryInsertError::UniqueConstraintViolation(_)) => { /* Another try */ }
             result => break result.unwrap(),
@@ -285,8 +286,17 @@ pub fn create_room(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-pub fn profile_set_name_avatar(ctx: &ReducerContext, name: Option<String>, avatar: Option<Avatar>) -> Result<(), String> {
-    let mut profile = ctx.db.profile().identity().find(ctx.sender()).ok_or("User has not yet created a profile")?;
+pub fn profile_set_name_avatar(
+    ctx: &ReducerContext,
+    name: Option<String>,
+    avatar: Option<Avatar>,
+) -> Result<(), String> {
+    let mut profile = ctx
+        .db
+        .profile()
+        .identity()
+        .find(ctx.sender())
+        .ok_or("User has not yet created a profile")?;
     if let Some(name) = name {
         validate_profile_name(&name)?;
         profile.name = name;
@@ -315,18 +325,314 @@ pub fn make_room_permanent(ctx: &ReducerContext) -> Result<(), String> {
         return Err("Not connected".to_string());
     };
 
-    let participation = ctx.db.participation().connection_id().find(connection_id).ok_or("Not in a room")?;
-    let participant = ctx.db.participant().id().find(participation.participant_id).ok_or("Participant not found")?;
-    if participant.role != ParticipantRole::Moderator {
-        return Err("Only moderators can make a room permanent".to_string());
-    }
-    
-    let room = ctx.db.room().id().find(participant.room_id).ok_or("Room not found")?;
+    log::debug!("Making room of connection {} permanent", connection_id);
+    let participant = ensure_moderator_participant(ctx, connection_id)?;
+
+    let room = ctx
+        .db
+        .room()
+        .id()
+        .find(participant.room_id)
+        .ok_or("Room not found")?;
     log::info!("Making room {} permanent", room.code);
     ctx.db.room().id().update(Room {
         permanent: true,
         ..room
     });
+
+    Ok(())
+}
+
+pub fn ensure_moderator_participant(ctx: &ReducerContext, connection_id: ConnectionId) -> Result<Participant, String> {
+    let participation = ctx
+        .db
+        .participation()
+        .connection_id()
+        .find(connection_id)
+        .ok_or("Not in a room")?;
+    let participant = ctx
+        .db
+        .participant()
+        .id()
+        .find(participation.participant_id)
+        .ok_or("Participant not found")?;
+    if participant.role != ParticipantRole::Moderator {
+        return Err("Only moderators can set the room topic".to_string());
+    }
+    Ok(participant)
+}
+
+#[reducer]
+pub fn set_room_topic(ctx: &ReducerContext, topic: String) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+
+    log::debug!("Setting room topic for connection {}", connection_id);
+    let participant = ensure_moderator_participant(ctx, connection_id)?;
+
+    let room = ctx
+        .db
+        .room()
+        .id()
+        .find(participant.room_id)
+        .ok_or("Room not found")?;
+    log::info!("Setting new topic for room {}", room.code);
+    ctx.db.room().id().update(Room {
+        current_topic: topic,
+        ..room
+    });
+
+    Ok(())
+}
+
+#[reducer]
+pub fn set_room_deck(ctx: &ReducerContext, new_deck: Vec<DeckCard>) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+
+    log::debug!("Setting room deck for connection {}", connection_id);
+    let participant = ensure_moderator_participant(ctx, connection_id)?;
+
+    let room = ctx
+        .db
+        .room()
+        .id()
+        .find(participant.room_id)
+        .ok_or("Room not found")?;
+    log::info!("Setting new deck for room {}", room.code);
+    if room.current_deck == new_deck {
+        log::trace!("New deck is the same as the current deck, no update needed");
+        return Ok(());
+    }
+
+    ctx.db.room().id().update(Room {
+        current_deck: new_deck,
+        ..room
+    });
+
+    // Reset all current votes
+    for participant in ctx.db.participant().by_room_id().filter(room.id) {
+        if participant.role != ParticipantRole::Player {
+            continue;
+        }
+        if ctx.db.ongoing_vote().participant_id().delete(participant.id) {
+            log::trace!("Reseted vote for participant {}", participant.id);
+        };
+    }
+
+    Ok(())
+}
+
+#[reducer]
+pub fn vote_for_card(ctx: &ReducerContext, card_id: u64) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+
+    log::debug!("Voting for card {} for connection {}", card_id, connection_id);
+    let participation = ctx
+        .db
+        .participation()
+        .connection_id()
+        .find(connection_id)
+        .ok_or("Not in a room")?;
+    let participant = ctx
+        .db
+        .participant().id().find(participation.participant_id).ok_or("Participant not found")?;
+    if participant.role != ParticipantRole::Player {
+        return Err("Only players can vote".to_string());
+    }
+    let room = ctx
+        .db
+        .room()
+        .id()
+        .find(participant.room_id)
+        .ok_or("Room not found")?;
+    if !room.current_deck.iter().any(|card| card.id == card_id) {
+        return Err("Card not found in deck".to_string());
+    }
+    if ctx.db.ongoing_vote().participant_id().find(participant.id).is_some() {
+        return Err("Player has already voted".to_string());
+    }
+    log::info!("Player {} voting for card {}", participant.id, card_id);
+    ctx.db.ongoing_vote().insert(OngoingVote {
+        participant_id: participant.id,
+        chosen_card_id: card_id,
+    });
+    Ok(())
+}
+
+#[reducer]
+pub fn cancel_my_vote(ctx: &ReducerContext) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+    log::debug!("Resetting vote for connection {}", connection_id);
+    let participation = ctx
+        .db
+        .participation()
+        .connection_id()
+        .find(connection_id)
+        .ok_or("Not in a room")?;
+    let participant = ctx
+        .db
+        .participant().id().find(participation.participant_id).ok_or("Participant not found")?;
+    if participant.role != ParticipantRole::Player {
+        return Err("Only players can cancel their vote".to_string());
+    }
+    log::info!("Cancelling vote for participant {}", participant.id);
+    if !ctx.db.ongoing_vote().participant_id().delete(participant.id) {
+        log::debug!("No vote to cancel for participant {}", participant.id);
+    }
+    Ok(())
+}
+
+#[reducer]
+pub fn reveal_room(ctx: &ReducerContext) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+
+    log::debug!("Revealing room for connection {}", connection_id);
+    let participant = ensure_moderator_participant(ctx, connection_id)?;
+
+    let room = ctx
+        .db
+        .room()
+        .id()
+        .find(participant.room_id)
+        .ok_or("Room not found")?;
+    log::info!("Revealing room {}", room.code);
+    let mut reveal_votes = vec![];
+    let current_deck_map = room
+        .current_deck
+        .iter()
+        .map(|card| (card.id, card))
+        .collect::<FxHashMap<_, _>>();
+    for participant in ctx.db.participant().by_room_id().filter(room.id) {
+        if participant.role != ParticipantRole::Player {
+            continue;
+        }
+        log::trace!("Checking vote for participant {}", participant.id);
+        match ctx.db.ongoing_vote().participant_id().find(participant.id) {
+            None => return Err("Player has not voted".to_string()),
+            Some(ongoing_vote) => {
+                let card = current_deck_map
+                    .get(&ongoing_vote.chosen_card_id)
+                    .ok_or("Card not found")?;
+                reveal_votes.push(RoomRevealVote {
+                    participant_id: participant.id,
+                    chosen_card_id: card.id,
+                    chosen_card_symbol: card.symbol.clone(),
+                });
+            }
+        }
+    }
+    let room = ctx.db.room().id().update(Room {
+        revealed: true,
+        ..room
+    });
+
+    // Add reveal outcome
+    log::info!("Adding reveal outcome for room {}", room.code);
+    ctx.db.room_reveal_outcome().insert(RoomRevealOutcome {
+        id: 0,
+        room_id: room.id,
+        timestamp: ctx.timestamp,
+        topic: room.current_topic,
+        votes: reveal_votes,
+    });
+
+    Ok(())
+}
+
+#[reducer]
+pub fn unreveal_room(ctx: &ReducerContext) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+    log::debug!("Unrevealing room for connection {}", connection_id);
+    let participant = ensure_moderator_participant(ctx, connection_id)?;
+
+    let room = ctx
+        .db
+        .room()
+        .id()
+        .find(participant.room_id)
+        .ok_or("Room not found")?;
+    log::info!("Unrevealing room {}", room.code);
+    let room = ctx.db.room().id().update(Room {
+        revealed: false,
+        ..room
+    });
+
+    // Clear all ongoing votes
+    log::debug!("Clearing all ongoing votes for room {}", room.code);
+    for participant in ctx.db.participant().by_room_id().filter(room.id) {
+        if ctx.db.ongoing_vote().participant_id().delete(participant.id) {
+            log::trace!("Reseted vote for participant {}", participant.id);
+        };
+    }
+
+    Ok(())
+}
+
+#[reducer]
+pub fn set_participant_role(
+    ctx: &ReducerContext,
+    participant_id: u64,
+    role: ParticipantRole,
+) -> Result<(), String> {
+    let Some(connection_id) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+
+    log::debug!(
+        "Setting participant role for participant {}",
+        participant_id
+    );
+    let participation = ctx
+        .db
+        .participation()
+        .connection_id()
+        .find(connection_id)
+        .ok_or("Not in a room")?;
+    let self_participant = ctx
+        .db
+        .participant()
+        .id()
+        .find(participation.participant_id)
+        .ok_or("Invoker participant not found")?;
+    let target_participant = ctx
+        .db
+        .participant()
+        .id()
+        .find(participant_id)
+        .ok_or("Target participant not found")?;
+    if self_participant.id != target_participant.id
+        && self_participant.role != ParticipantRole::Moderator
+    {
+        return Err("Only moderators can set other participant's role".to_string());
+    }
+    log::info!(
+        "Setting role for participant {} to {:?}",
+        target_participant.id,
+        role
+    );
+    let target_participant = ctx.db.participant().id().update(Participant {
+        role: role,
+        ..target_participant
+    });
+
+    // Reset the current vote if new_role is not Player
+    if target_participant.role != ParticipantRole::Player {
+        log::debug!("Resetting vote for participant {}", target_participant.id);
+        if ctx.db.ongoing_vote().participant_id().delete(target_participant.id) {
+            log::trace!("Reseted vote for participant {}", target_participant.id);
+        };
+    }
 
     Ok(())
 }

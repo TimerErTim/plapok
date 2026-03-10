@@ -37,6 +37,12 @@ export const Avatar = __t.enum("Avatar", {
 });
 export type Avatar = __Infer<typeof Avatar>;
 
+export const DeckCard = __t.object("DeckCard", {
+  id: __t.u64(),
+  symbol: __t.string(),
+});
+export type DeckCard = __Infer<typeof DeckCard>;
+
 export const DeleteRoom = __t.object("DeleteRoom", {
   roomId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
@@ -44,10 +50,8 @@ export const DeleteRoom = __t.object("DeleteRoom", {
 export type DeleteRoom = __Infer<typeof DeleteRoom>;
 
 export const OngoingVote = __t.object("OngoingVote", {
-  id: __t.u64(),
-  roomId: __t.u64(),
   participantId: __t.u64(),
-  chosenCard: __t.string(),
+  chosenCardId: __t.u64(),
 });
 export type OngoingVote = __Infer<typeof OngoingVote>;
 
@@ -108,12 +112,18 @@ export const Room = __t.object("Room", {
   code: __t.string(),
   permanent: __t.bool(),
   currentTopic: __t.string(),
+  revealed: __t.bool(),
+  get currentDeck() {
+    return __t.array(DeckCard);
+  },
 });
 export type Room = __Infer<typeof Room>;
 
 export const RoomRevealOutcome = __t.object("RoomRevealOutcome", {
+  id: __t.u64(),
   roomId: __t.u64(),
   timestamp: __t.timestamp(),
+  topic: __t.string(),
   get votes() {
     return __t.array(RoomRevealVote);
   },
@@ -122,8 +132,8 @@ export type RoomRevealOutcome = __Infer<typeof RoomRevealOutcome>;
 
 export const RoomRevealVote = __t.object("RoomRevealVote", {
   participantId: __t.u64(),
-  participantName: __t.string(),
-  chosenCardName: __t.string(),
+  chosenCardId: __t.u64(),
+  chosenCardSymbol: __t.string(),
 });
 export type RoomRevealVote = __Infer<typeof RoomRevealVote>;
 
@@ -131,6 +141,9 @@ export const RoomView = __t.object("RoomView", {
   code: __t.string(),
   permanent: __t.bool(),
   currentTopic: __t.string(),
+  get currentDeck() {
+    return __t.array(DeckCard);
+  },
   get participants() {
     return __t.array(ParticipantView);
   },
@@ -144,6 +157,9 @@ export type RoomView = __Infer<typeof RoomView>;
 export const VoteResultRecordView = __t.object("VoteResultRecordView", {
   timestamp: __t.timestamp(),
   topic: __t.string(),
+  get votes() {
+    return __t.array(RoomRevealVote);
+  },
 });
 export type VoteResultRecordView = __Infer<typeof VoteResultRecordView>;
 
@@ -151,7 +167,9 @@ export type VoteResultRecordView = __Infer<typeof VoteResultRecordView>;
 export const VoteStateView = __t.enum("VoteStateView", {
   NotVoted: __t.unit(),
   Voted: __t.unit(),
-  Revealed: __t.string(),
+  get Revealed() {
+    return DeckCard;
+  },
 });
 export type VoteStateView = __Infer<typeof VoteStateView>;
 

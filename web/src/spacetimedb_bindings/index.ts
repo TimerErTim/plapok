@@ -34,12 +34,19 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import CancelMyVoteReducer from "./cancel_my_vote_reducer";
 import CreateProfileReducer from "./create_profile_reducer";
 import CreateRoomReducer from "./create_room_reducer";
 import DisconnectCurrentRoomReducer from "./disconnect_current_room_reducer";
 import JoinRoomReducer from "./join_room_reducer";
 import MakeRoomPermanentReducer from "./make_room_permanent_reducer";
 import ProfileSetNameAvatarReducer from "./profile_set_name_avatar_reducer";
+import RevealRoomReducer from "./reveal_room_reducer";
+import SetParticipantRoleReducer from "./set_participant_role_reducer";
+import SetRoomDeckReducer from "./set_room_deck_reducer";
+import SetRoomTopicReducer from "./set_room_topic_reducer";
+import UnrevealRoomReducer from "./unreveal_room_reducer";
+import VoteForCardReducer from "./vote_for_card_reducer";
 
 // Import all procedure arg schemas
 
@@ -69,12 +76,19 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("cancel_my_vote", CancelMyVoteReducer),
   __reducerSchema("create_profile", CreateProfileReducer),
   __reducerSchema("create_room", CreateRoomReducer),
   __reducerSchema("disconnect_current_room", DisconnectCurrentRoomReducer),
   __reducerSchema("join_room", JoinRoomReducer),
   __reducerSchema("make_room_permanent", MakeRoomPermanentReducer),
   __reducerSchema("profile_set_name_avatar", ProfileSetNameAvatarReducer),
+  __reducerSchema("reveal_room", RevealRoomReducer),
+  __reducerSchema("set_participant_role", SetParticipantRoleReducer),
+  __reducerSchema("set_room_deck", SetRoomDeckReducer),
+  __reducerSchema("set_room_topic", SetRoomTopicReducer),
+  __reducerSchema("unreveal_room", UnrevealRoomReducer),
+  __reducerSchema("vote_for_card", VoteForCardReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

@@ -6,17 +6,31 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import CancelMyVoteReducer from "../cancel_my_vote_reducer";
 import CreateProfileReducer from "../create_profile_reducer";
 import CreateRoomReducer from "../create_room_reducer";
 import DisconnectCurrentRoomReducer from "../disconnect_current_room_reducer";
 import JoinRoomReducer from "../join_room_reducer";
 import MakeRoomPermanentReducer from "../make_room_permanent_reducer";
 import ProfileSetNameAvatarReducer from "../profile_set_name_avatar_reducer";
+import RevealRoomReducer from "../reveal_room_reducer";
+import SetParticipantRoleReducer from "../set_participant_role_reducer";
+import SetRoomDeckReducer from "../set_room_deck_reducer";
+import SetRoomTopicReducer from "../set_room_topic_reducer";
+import UnrevealRoomReducer from "../unreveal_room_reducer";
+import VoteForCardReducer from "../vote_for_card_reducer";
 
+export type CancelMyVoteParams = __Infer<typeof CancelMyVoteReducer>;
 export type CreateProfileParams = __Infer<typeof CreateProfileReducer>;
 export type CreateRoomParams = __Infer<typeof CreateRoomReducer>;
 export type DisconnectCurrentRoomParams = __Infer<typeof DisconnectCurrentRoomReducer>;
 export type JoinRoomParams = __Infer<typeof JoinRoomReducer>;
 export type MakeRoomPermanentParams = __Infer<typeof MakeRoomPermanentReducer>;
 export type ProfileSetNameAvatarParams = __Infer<typeof ProfileSetNameAvatarReducer>;
+export type RevealRoomParams = __Infer<typeof RevealRoomReducer>;
+export type SetParticipantRoleParams = __Infer<typeof SetParticipantRoleReducer>;
+export type SetRoomDeckParams = __Infer<typeof SetRoomDeckReducer>;
+export type SetRoomTopicParams = __Infer<typeof SetRoomTopicReducer>;
+export type UnrevealRoomParams = __Infer<typeof UnrevealRoomReducer>;
+export type VoteForCardParams = __Infer<typeof VoteForCardReducer>;
 

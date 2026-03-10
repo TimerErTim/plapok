@@ -10,6 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
+  DeckCard,
   ParticipantView,
   VoteResultRecordView,
 } from "./types";
@@ -19,6 +20,9 @@ export default __t.row({
   code: __t.string(),
   permanent: __t.bool(),
   currentTopic: __t.string().name("current_topic"),
+  get currentDeck() {
+    return __t.array(DeckCard).name("current_deck");
+  },
   get participants() {
     return __t.array(ParticipantView);
   },

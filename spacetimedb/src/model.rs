@@ -53,6 +53,8 @@ pub struct Room {
     pub code: String,
     pub permanent: bool, // If true, room is permanent and will not be deleted upon last participant leaving
     pub current_topic: String,
+    pub revealed: bool,
+    pub current_deck: Vec<DeckCard>,
 }
 
 #[derive(SpacetimeType, Clone, Debug, PartialEq)]
@@ -97,32 +99,33 @@ pub struct DeleteRoom {
     pub scheduled_at: ScheduleAt,
 }
 
-#[table(accessor = room_reveal_outcome, private)]
+#[table(accessor = room_reveal_outcome, private,
+    index(accessor = by_room_id, btree(columns = [room_id]))
+)]
 pub struct RoomRevealOutcome {
     #[primary_key]
+    #[auto_inc]
+    pub id: u64,
     pub room_id: u64,
     pub timestamp: Timestamp,
+    pub topic: String,
     pub votes: Vec<RoomRevealVote>,
 }
 
 #[derive(SpacetimeType)]
 pub struct RoomRevealVote {
     pub participant_id: u64,
-    pub participant_name: String,
-    pub chosen_card_name: String,
+    pub chosen_card_id: u64,
+    pub chosen_card_symbol: String,
 }
 
 #[table(accessor = ongoing_vote, private,
-    index(accessor = by_room_id, btree(columns = [room_id])),
     index(accessor = by_participant_id, btree(columns = [participant_id]))
 )]
 pub struct OngoingVote {
     #[primary_key]
-    #[auto_inc]
-    pub id: u64,
-    pub room_id: u64,
     pub participant_id: u64,
-    pub chosen_card: String,
+    pub chosen_card_id: u64,
 }
 
 // Views
@@ -136,6 +139,7 @@ pub struct RoomView {
     pub code: String,
     pub permanent: bool,
     pub current_topic: String,
+    pub current_deck: Vec<DeckCard>,
     pub participants: Vec<ParticipantView>,
     pub vote_history: Vec<VoteResultRecordView>,
     pub my_connections: Vec<ConnectionId>,
@@ -145,7 +149,7 @@ pub struct RoomView {
 pub struct VoteResultRecordView {
     pub timestamp: Timestamp,
     pub topic: String,
-    //pub votes: Vec<VoteResultView>,
+    pub votes: Vec<RoomRevealVote>,
 }
 
 #[derive(SpacetimeType)]
@@ -157,11 +161,18 @@ pub struct ParticipantView {
     pub vote_state: VoteStateView,
 }
 
+
 #[derive(SpacetimeType)]
 pub enum VoteStateView {
     NotVoted,
     Voted,
-    Revealed(String),
+    Revealed(DeckCard),
+}
+
+#[derive(SpacetimeType, Clone, PartialEq)]
+pub struct DeckCard {
+    pub id: u64,
+    pub symbol: String,
 }
 
 #[view(accessor = my_participating_rooms, public)]
@@ -176,6 +187,15 @@ pub fn my_participating_rooms(ctx: &ViewContext) -> Vec<RoomView> {
         {
             let room = all_rooms.entry(participant.room_id).or_insert_with(|| {
                 let room = ctx.db.room().id().find(participant.room_id).unwrap();
+                let deck_cards_map: FxHashMap<_, _> = room.current_deck.iter().map(|card| (card.id, card)).collect();
+
+                // Find vote history
+                let vote_history = ctx.db.room_reveal_outcome().by_room_id().filter(participant.room_id).map(|reveal| VoteResultRecordView {
+                    timestamp: reveal.timestamp,
+                    topic: reveal.topic,
+                    votes: reveal.votes,
+                });
+
                 // Find all other active participants in the room
                 let all_active_participants = ctx.db.participant().by_room_id().filter(participant.room_id).filter(|participant| ctx.db.participation().by_participant_id().filter(participant.id).count() > 0);
                 RoomView {
@@ -187,9 +207,17 @@ pub fn my_participating_rooms(ctx: &ViewContext) -> Vec<RoomView> {
                         name: participant.name,
                         avatar: participant.avatar,
                         role: participant.role,
-                        vote_state: VoteStateView::NotVoted,
+                        vote_state: match ctx.db.ongoing_vote().participant_id().find(participant.id) {
+                            None => VoteStateView::NotVoted,
+                            Some(ongoing_vote) => if room.revealed {
+                                VoteStateView::Revealed(deck_cards_map.get(&ongoing_vote.chosen_card_id).unwrap().to_owned().clone())
+                            } else {
+                                VoteStateView::Voted
+                            },
+                        },
                     }).collect(),
-                    vote_history: vec![],
+                    current_deck: room.current_deck,
+                    vote_history: vote_history.collect(),
                     my_connections: vec![],
                 }
             });
