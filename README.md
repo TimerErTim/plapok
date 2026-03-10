@@ -13,7 +13,7 @@
 * **UI Components**: [HeroUI v3](https://v3.heroui.com/) (formerly NextUI)
 * **Styling**: Tailwind CSS
 * **Backend/Database**: [SpacetimeDB 2.0](https://spacetimedb.com/) (Rust-based server modules)
-* **Runtime/Env Management**: `mise` (mise-en-place)
+* **Runtime/Env Management**: [mise](https://mise.jdx.dev/) (mise-en-place)
 
 ---
 
