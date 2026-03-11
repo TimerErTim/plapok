@@ -1,4 +1,4 @@
-import { Button, Description, InputGroup, Label, Popover, Separator, TextField } from "@heroui/react";
+import { Button, Description, InputGroup, Label, labelVariants, Popover, Separator, TextField } from "@heroui/react";
 
 import { Modal } from "@heroui/react";
 import { FaCopy, FaShare, FaShareAlt } from "react-icons/fa";
@@ -18,7 +18,7 @@ export default function RoomSharingModal({ roomCode }: { roomCode: string }) {
         url: sharingUrl,
     }
 
-    const canShare = navigator.canShare && navigator.canShare(sharePayload)
+    const canShare = navigator.canShare && navigator.canShare(sharePayload) && false
 
     function handleUrlButtonPress() {
         if (canShare) {
@@ -47,24 +47,20 @@ export default function RoomSharingModal({ roomCode }: { roomCode: string }) {
                         </Modal.Heading>
                     </Modal.Header>
                     <Modal.Body>
-                        <div className="w-full text-sm flex flex-col gap-2">
-                            <Label htmlFor="join-url">Join URL</Label>
-                            <InputGroup variant="secondary">
-                                <InputGroup.Input  id="join-url" value={sharingUrl} readOnly disabled className="bg-default text-sm sm:text-base"/>
-                                <InputGroup.Suffix className="p-0">
-                                    <Popover isOpen={copiedFeedbackMessage !== null}>
-                                        <Popover.Trigger>
-                                            <Button isIconOnly aria-label={canShare ? "Share" : "Copy"} size="sm" variant="ghost" onPress={handleUrlButtonPress}>
-                                                {canShare ? <FaShare /> : <FaCopy />}
-                                            </Button>
-                                        </Popover.Trigger>
-                                        <Popover.Content className="p-1 text-xs" placement="top right">
-                                            <Popover.Arrow />
-                                            {copiedFeedbackMessage}
-                                        </Popover.Content>
-                                    </Popover>
-                                </InputGroup.Suffix>
-                            </InputGroup>
+                        <div className="w-full text-sm flex flex-col gap-1">
+                            <p className={labelVariants({})}>Join URL</p>
+                            <div className="flex flex-row items-center gap-1 justify-between bg-default rounded-lg p-1">
+                                <p className="text-sm sm:text-base px-2 text-default-foreground shrink min-w-0 overflow-x-auto">{sharingUrl}</p>
+                                <Popover isOpen={copiedFeedbackMessage !== null}>
+                                    <Button isIconOnly aria-label={canShare ? "Share" : "Copy"} size="sm" variant="ghost" onPress={handleUrlButtonPress} className="text-muted hover:text-default-foreground">
+                                        {canShare ? <FaShare /> : <FaCopy />}
+                                    </Button>
+                                    <Popover.Content className="p-1 text-xs" placement="top right">
+                                        <Popover.Arrow />
+                                        {copiedFeedbackMessage}
+                                    </Popover.Content>
+                                </Popover>
+                            </div>
                             <Description>
                                 Share the link with your players to join the room.
                             </Description>
