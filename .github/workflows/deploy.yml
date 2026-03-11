@@ -47,7 +47,6 @@ jobs:
         env:
           VITE_SPACETIMEDB_URI: https://maincloud.spacetimedb.com
           VITE_SPACETIMEDB_MODULE: timerertim-plapok-01
-          VITE_PUBLIC_URL: https://plapok.timerertim.eu
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
