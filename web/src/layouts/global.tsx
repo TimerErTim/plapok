@@ -50,7 +50,7 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
               <FaArrowLeft className={cx("text-xl", !isRoomPage && "invisible")} />
               <img src="/plapok.svg" alt="Plapok" className="h-full -my-2" />
             </Link>
-            <Link to="https://github.com/timerertim/plapok" target="_blank" className={linkVariants({}).base()}>
+            <Link to="https://github.com/timerertim/plapok" target="_blank" className={cx(linkVariants({}).base(), "hidden sm:flex")}>
               Star on <FaGithub className="text-lg ml-2" />
             </Link>
           </nav>
