@@ -1,0 +1,225 @@
+{/* --- HEADER --- */}
+            <header className="flex-shrink-0 h-16 border-b border-default-200/50 bg-background/60 backdrop-blur-xl px-4 lg:px-6 flex items-center justify-between gap-4 z-20">
+
+                {/* Mobile Menu Trigger */}
+                <Button isIconOnly variant="light" className="lg:hidden" onPress={openDrawer}>
+                    <MenuIcon className="text-default-500" />
+                </Button>
+
+                {/* Topic (Editable) */}
+                <div className="flex-grow max-w-2xl">
+                    {isEditingTopic && isMod ? (
+                        <Input
+                            autoFocus
+                            value={topic}
+                            onValueChange={setTopic}
+                            onBlur={() => setIsEditingTopic(false)}
+                            onKeyDown={(e) => e.key === 'Enter' && setIsEditingTopic(false)}
+                            variant="faded"
+                            size="sm"
+                            classNames={{ inputWrapper: "bg-background/80" }}
+                            endContent={<CheckIcon className="text-success cursor-pointer" onClick={() => setIsEditingTopic(false)} />}
+                        />
+                    ) : (
+                        <h1
+                            onClick={() => isMod && setIsEditingTopic(true)}
+                            className={`text-lg md:text-xl font-bold truncate ${isMod ? 'cursor-pointer hover:text-primary transition-colors hover:underline decoration-dashed underline-offset-4' : ''}`}
+                            title={topic}
+                        >
+                            {topic}
+                        </h1>
+                    )}
+                </div>
+
+                {/* Header Actions */}
+                <div className="flex items-center gap-2">
+                    {/* Share Popover */}
+                    <Popover placement="bottom-end" backdrop="opaque">
+                        <PopoverTrigger>
+                            <Button isIconOnly variant="flat" className="bg-default-100/50 text-default-600"><ShareIcon /></Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-4 w-80">
+                            <div className="text-sm font-bold mb-2">Invite Players</div>
+                            <Snippet symbol="" variant="flat" className="w-full mb-4" size="sm">https://plapok.com/room/XyZ99</Snippet>
+                            <div className="flex justify-center p-4 bg-white rounded-xl border border-default-100">
+                                {/* Mock QR Code */}
+                                <div className="w-32 h-32 bg-default-200 rounded-md flex items-center justify-center text-default-400 text-xs text-center p-2">QR Code Placeholder</div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    {/* Settings Popover (Mod only) */}
+                    {isMod && (
+                        <Popover placement="bottom-end">
+                            <PopoverTrigger>
+                                <Button isIconOnly variant="flat" className="bg-default-100/50 text-default-600"><SettingsIcon /></Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-4 w-64">
+                                <div className="text-sm font-bold mb-4">Room Settings</div>
+                                <Select
+                                    label="Card Deck"
+                                    selectedKeys={[selectedDeck]}
+                                    onSelectionChange={(k) => setSelectedDeck(Array.from(k)[0] as string)}
+                                    variant="faded"
+                                >
+                                    <SelectItem key="fibonacci">Fibonacci (0, 1, 2, 3, 5...)</SelectItem>
+                                    <SelectItem key="tshirt">T-Shirt Sizing (XS, S, M, L...)</SelectItem>
+                                    <SelectItem key="linear">Linear (1, 2, 3, 4, 5...)</SelectItem>
+                                </Select>
+                            </PopoverContent>
+                        </Popover>
+                    )}
+                </div>
+            </header>
+
+            {/* --- MAIN CONTENT LAYOUT --- */}
+            <div className="flex-grow flex overflow-hidden relative z-10">
+
+                {/* SIDEBAR (Desktop) */}
+                <aside className="hidden lg:flex flex-col w-72 border-r border-default-200/50 bg-background/40 backdrop-blur-md p-6 overflow-y-auto">
+                    <SidebarContent />
+                </aside>
+
+                {/* MOBILE DRAWER (Sidebar content) */}
+                <Drawer isOpen={isDrawerOpen} onOpenChange={onDrawerChange}>
+                    <DrawerContent>
+                        {(onClose) => (
+                            <>
+                                <DrawerHeader className="flex flex-col gap-1">Room Details</DrawerHeader>
+                                <DrawerBody>
+                                    <SidebarContent />
+                                </DrawerBody>
+                            </>
+                        )}
+                    </DrawerContent>
+                </Drawer>
+
+
+                {/* MAIN GAME AREA (Grid of Players) */}
+                <main className="flex-grow p-4 md:p-6 overflow-y-auto no-scrollbar">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 auto-rows-fr justify-center justify-items-center content-start max-w-6xl mx-auto">
+                        {mockUsers.filter(u => u.role !== 'spectator').map((user) => {
+                            // Determine card visuals based on state
+                            const hasVoted = user.status === "voted" || user.status === "revealed";
+                            const isRevealedState = isRevealed || user.status === "revealed";
+                            // If it's ME, show my voted card internally even if not revealed yet
+                            const showValue = isRevealedState || (user.id === CURRENT_USER_ID && hasVoted);
+                            const cardValue = showValue ? (user.id === CURRENT_USER_ID ? myVote : user.vote) : null;
+
+                            return (
+                                <div key={user.id} className="flex flex-col items-center gap-3 p-2 w-full max-w-[140px]">
+                                    {/* The "Card" on the table */}
+                                    <div className={`
+                      relative w-20 h-28 sm:w-24 sm:h-32 rounded-xl border-2 transition-all duration-300 flex items-center justify-center shadow-sm
+                      ${hasVoted ? 'border-primary bg-primary/10 -translate-y-1 shadow-md' : 'border-dashed border-default-300 bg-default-100/30'}
+                      ${isRevealedState && hasVoted ? 'bg-background border-primary flip-in-ver-right' : ''}
+                  `}>
+                                        {!hasVoted && <div className="animate-pulse text-default-300">...</div>}
+
+                                        {hasVoted && !showValue && (
+                                            // Face down card back
+                                            <div className="absolute inset-1 rounded-lg bg-primary/20 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-full bg-primary/30"></div>
+                                            </div>
+                                        )}
+
+                                        {hasVoted && showValue && (
+                                            // Revealed card face
+                                            <span className="text-3xl md:text-4xl font-bold text-primary">{cardValue}</span>
+                                        )}
+
+                                    </div>
+
+                                    {/* Player Info */}
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className="relative">
+                                            <Avatar src={`https://i.pravatar.cc/150?u=${user.id}`} name={user.name} size="sm" isBordered color={hasVoted ? "primary" : "default"} />
+                                            {isMod && user.role === 'moderator' && (
+                                                <Chip size="sm" color="secondary" variant="flat" className="absolute -bottom-2 -right-4 scale-75 border-none">MOD</Chip>
+                                            )}
+                                        </div>
+                                        <span className="text-sm font-medium mt-2 truncate w-full">{user.name}</span>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </main>
+            </div>
+
+            {/* --- BOTTOM ACTION BAR --- */}
+            {!isSpectator && (
+                <footer className={`
+            flex-shrink-0 p-4 border-t border-default-200/50 bg-background/80 backdrop-blur-xl transition-all z-30
+            ${isMod ? 'flex flex-col sm:flex-row items-center gap-4' : ''}
+          `}>
+                    {/* Moderator Action */}
+                    {isMod && (
+                        <Button
+                            size="lg"
+                            color={isRevealed ? "default" : "primary"}
+                            variant={isRevealed ? "flat" : "solid"}
+                            className="w-full sm:w-auto font-bold"
+                            onPress={() => setIsRevealed(!isRevealed)}
+                        >
+                            {isRevealed ? "Reset Round" : "Reveal Cards"}
+                        </Button>
+                    )}
+
+                    {/* Player Hand (Card Selection) */}
+                    {!isRevealed && (
+                        <div className="flex-grow w-full overflow-x-auto no-scrollbar pb-2 sm:pb-0">
+                            <div className="flex gap-2 sm:gap-4 mx-auto w-max sm:justify-center px-2">
+                                {DECK_FIB.map((card) => {
+                                    const isSelected = myVote === card;
+                                    return (
+                                        <Card
+                                            key={card}
+                                            isPressable
+                                            onPress={() => handleVote(card)}
+                                            className={`
+                        w-14 h-20 sm:w-16 sm:h-24 flex-shrink-0 border-2 transition-all
+                        ${isSelected ? 'border-primary bg-primary/20 -translate-y-2 shadow-lg' : 'border-default-200 hover:border-primary/50 hover:-translate-y-1 bg-background/50'}
+                      `}
+                                        >
+                                            <CardBody className="p-0 flex items-center justify-center">
+                                                <span className={`text-xl sm:text-2xl font-bold ${isSelected ? 'text-primary' : 'text-foreground'}`}>{card}</span>
+                                            </CardBody>
+                                        </Card>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </footer>
+            )}
+            <div>
+                {connectedRoom.currentDeck.map((card, index) => {
+                    // Calculate symmetric rotation based on index
+                    // For N cards, the middle card is straight, others rotate away from center
+                    const total = connectedRoom.currentDeck.length
+                    const center = (total - 1) / 2
+                    const maxRotation = 40 // degrees, you can adjust for desired "spread"
+                    const rotation = (index - center) * (total === 1 ? 0 : (maxRotation / center))
+                    return (
+                        <Card
+                            className={cx(
+                                "h-24",
+                                "w-8",
+                                "flex",
+                                "items-center",
+                                "justify-center",
+                                "transition-transform",
+                                "absolute bottom-0 hover:-translate-y-2"
+                            )}
+                            style={{
+                                zIndex: index,
+                                position: "relative",
+                                transform: `rotate(${rotation}deg)`
+                            }}
+                        >
+                            <p>{card.symbol}</p>
+                        </Card>
+                    )
+                })}
+            </div>

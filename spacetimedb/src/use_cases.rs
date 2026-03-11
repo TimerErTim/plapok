@@ -3,8 +3,7 @@ use std::time::Duration;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 use spacetimedb::{
-    ConnectionId, DbContext, ReducerContext, ScheduleAt, Table, TryInsertError, rand, reducer,
-    spacetimedb_lib::connection_id,
+    ConnectionId, DbContext, Identity, ReducerContext, ScheduleAt, Table, TryInsertError, rand, reducer, spacetimedb_lib::connection_id
 };
 
 use crate::{
@@ -582,7 +581,7 @@ pub fn unreveal_room(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer]
 pub fn set_participant_role(
     ctx: &ReducerContext,
-    participant_id: u64,
+    identity: Identity,
     role: ParticipantRole,
 ) -> Result<(), String> {
     let Some(connection_id) = ctx.connection_id() else {
@@ -590,8 +589,8 @@ pub fn set_participant_role(
     };
 
     log::debug!(
-        "Setting participant role for participant {}",
-        participant_id
+        "Setting participant role for identity {}",
+        identity
     );
     let participation = ctx
         .db
@@ -608,8 +607,9 @@ pub fn set_participant_role(
     let target_participant = ctx
         .db
         .participant()
-        .id()
-        .find(participant_id)
+        .by_identity_room_id()
+        .filter((identity, self_participant.room_id))
+        .next()
         .ok_or("Target participant not found")?;
     if self_participant.id != target_participant.id
         && self_participant.role != ParticipantRole::Moderator

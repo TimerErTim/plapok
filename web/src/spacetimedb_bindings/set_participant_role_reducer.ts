@@ -15,7 +15,7 @@ import {
 } from "./types";
 
 export default {
-  participantId: __t.u64(),
+  identity: __t.identity(),
   get role() {
     return ParticipantRole;
   },

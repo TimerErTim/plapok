@@ -6,7 +6,10 @@ import { useMemo } from "react";
 
 type ProfileProps = Pick<Profile, "avatar" | "name" | "identity">
 
-export default function useAvatar(profile: ProfileProps | null) {
+export function getAvatar(profile: ProfileProps): ReturnType<typeof createAvatar> 
+export function getAvatar(profile: null): null
+export function getAvatar(profile: ProfileProps | null): ReturnType<typeof createAvatar> | null
+export function getAvatar(profile: ProfileProps | null) {
     const seed = invoke(() => {
         if (!profile) {
             return null
@@ -22,26 +25,30 @@ export default function useAvatar(profile: ProfileProps | null) {
         }
     })
 
-    const avatar = useMemo(() => {
-        if (!seed) {
-            return null
-        }
+    if (!seed) {
+        return null
+    }
 
-        return createAvatar(avataaarsNeutral, {
-            "backgroundColor": [
-                "ae5d29",
-                "f8d25c",
-                "fd9841",
-                "b6e3f4",
-                "c0aede",
-                "ffdfbf",
-                "614335",
-                "0a835b",
-            ],
-            scale: 80,
-            "seed": seed
-        });
-    }, [seed]);
+    return createAvatar(avataaarsNeutral, {
+        "backgroundColor": [
+            "ae5d29",
+            "f8d25c",
+            "fd9841",
+            "b6e3f4",
+            "c0aede",
+            "ffdfbf",
+            "614335",
+            "0a835b",
+        ],
+        scale: 80,
+        "seed": seed
+    });
+}
+
+export default function useAvatar(profile: ProfileProps | null) {
+    const avatar = useMemo(() => {
+        return getAvatar(profile)
+    }, [profile]);
 
     return avatar
 }

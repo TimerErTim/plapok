@@ -64,7 +64,7 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <main className="relative z-10 flex flex-grow flex-col">
-        <div className="container mx-auto flex flex-grow flex-col max-w-7xl px-6 py-8">
+        <div className="container mx-auto flex flex-grow flex-col max-w-7xl p-4">
           {children}
         </div>
       </main>

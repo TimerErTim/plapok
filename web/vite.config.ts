@@ -15,6 +15,8 @@ export default defineConfig({
     minify: 'esbuild',
     // Generate source maps for debugging
     sourcemap: true,
+    // Splits css for js chunks
+    //cssCodeSplit: true,
   },
   // Optimize development server
   server: {

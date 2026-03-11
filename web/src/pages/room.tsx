@@ -1,10 +1,11 @@
 import useConnectionRoom from "@/hooks/useConnectionRoom";
 import { reducers } from "@/spacetimedb_bindings";
 import { Spinner } from "@heroui/react";
-import { useEffect, useState } from "react";
+import { lazy, useEffect, useState } from "react";
 import { FaHome } from "react-icons/fa";
 import { Link, useParams } from "react-router";
 import { useReducer } from "spacetimedb/react";
+const WholeRoom = lazy(() => import("@/components/wholeRoom"));
 
 export default function Room() {
     const { connectedRoom, roomReady } = useConnectionRoom()
@@ -37,18 +38,8 @@ export default function Room() {
         </div>
     }
 
-    return (
-        <div>
-            <h1>Room</h1>
-            <p>{connectedRoom.currentTopic}</p>
-            <div>
-                {connectedRoom.participants.map(participant => (
-                    <div key={participant.id}>
-                        <p>{participant.name}</p>
-                        <p>{participant.role.tag}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    )
+    return <>
+        {/* <title>Room {connectedRoom.code} | Plapok</title> */}
+        <WholeRoom connectedRoom={connectedRoom} />
+    </>
 }
