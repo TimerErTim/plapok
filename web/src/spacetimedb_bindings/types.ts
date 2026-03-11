@@ -78,10 +78,8 @@ export const ParticipantRole = __t.enum("ParticipantRole", {
 export type ParticipantRole = __Infer<typeof ParticipantRole>;
 
 export const ParticipantView = __t.object("ParticipantView", {
-  id: __t.u64(),
-  name: __t.string(),
-  get avatar() {
-    return Avatar;
+  get profile() {
+    return Profile;
   },
   get role() {
     return ParticipantRole;
@@ -106,6 +104,15 @@ export const Profile = __t.object("Profile", {
   },
 });
 export type Profile = __Infer<typeof Profile>;
+
+export const RevealedVoteRecordView = __t.object("RevealedVoteRecordView", {
+  get profile() {
+    return Profile;
+  },
+  chosenCardId: __t.u64(),
+  chosenCardSymbol: __t.string(),
+});
+export type RevealedVoteRecordView = __Infer<typeof RevealedVoteRecordView>;
 
 export const Room = __t.object("Room", {
   id: __t.u64(),
@@ -158,7 +165,7 @@ export const VoteResultRecordView = __t.object("VoteResultRecordView", {
   timestamp: __t.timestamp(),
   topic: __t.string(),
   get votes() {
-    return __t.array(RoomRevealVote);
+    return __t.array(RevealedVoteRecordView);
   },
 });
 export type VoteResultRecordView = __Infer<typeof VoteResultRecordView>;

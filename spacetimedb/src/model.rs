@@ -9,6 +9,7 @@ use crate::use_cases::handle_delete_room;
 // Tables
 
 #[table(accessor = profile, private)]
+#[derive(Clone)]
 pub struct Profile {
     #[primary_key]
     pub identity: Identity,
@@ -149,14 +150,19 @@ pub struct RoomView {
 pub struct VoteResultRecordView {
     pub timestamp: Timestamp,
     pub topic: String,
-    pub votes: Vec<RoomRevealVote>,
+    pub votes: Vec<RevealedVoteRecordView>,
+}
+
+#[derive(SpacetimeType)]
+pub struct RevealedVoteRecordView {
+    pub profile: Profile,
+    pub chosen_card_id: u64,
+    pub chosen_card_symbol: String,
 }
 
 #[derive(SpacetimeType)]
 pub struct ParticipantView {
-    pub id: u64,
-    pub name: String,
-    pub avatar: Avatar,
+    pub profile: Profile,
     pub role: ParticipantRole,
     pub vote_state: VoteStateView,
 }
@@ -178,6 +184,7 @@ pub struct DeckCard {
 #[view(accessor = my_participating_rooms, public)]
 pub fn my_participating_rooms(ctx: &ViewContext) -> Vec<RoomView> {
     let mut all_rooms = FxHashMap::default();
+    let mut all_profiles = FxHashMap::default();
     for participant in ctx.db.participant().by_identity().filter(ctx.sender()) {
         for active_participation in ctx
             .db
@@ -188,24 +195,34 @@ pub fn my_participating_rooms(ctx: &ViewContext) -> Vec<RoomView> {
             let room = all_rooms.entry(participant.room_id).or_insert_with(|| {
                 let room = ctx.db.room().id().find(participant.room_id).unwrap();
                 let deck_cards_map: FxHashMap<_, _> = room.current_deck.iter().map(|card| (card.id, card)).collect();
+                
+                // Find all participants in the room
+                let room_participants: FxHashMap<_, _> = ctx.db.participant().by_room_id().filter(participant.room_id).map(|participant| (participant.id, participant)).collect();
 
                 // Find vote history
                 let vote_history = ctx.db.room_reveal_outcome().by_room_id().filter(participant.room_id).map(|reveal| VoteResultRecordView {
                     timestamp: reveal.timestamp,
                     topic: reveal.topic,
-                    votes: reveal.votes,
-                });
+                    votes: reveal.votes.into_iter().map(|vote| RevealedVoteRecordView {
+                        profile: all_profiles.entry(vote.participant_id).or_insert_with(|| {
+                            let participant = room_participants.get(&vote.participant_id).unwrap();
+                            ctx.db.profile().identity().find(participant.identity).unwrap()
+                        }).clone(),
+                        chosen_card_id: vote.chosen_card_id,
+                        chosen_card_symbol: vote.chosen_card_symbol,
+                    }).collect(),
+                }).collect();
 
-                // Find all other active participants in the room
-                let all_active_participants = ctx.db.participant().by_room_id().filter(participant.room_id).filter(|participant| ctx.db.participation().by_participant_id().filter(participant.id).count() > 0);
+                // Find all active participants in the room
+                let all_active_participants = room_participants.into_values().filter(|participant| ctx.db.participation().by_participant_id().filter(participant.id).count() > 0);
                 RoomView {
                     code: room.code,
                     permanent: room.permanent,
                     current_topic: room.current_topic,
                     participants: all_active_participants.map(|participant| ParticipantView {
-                        id: participant.id,
-                        name: participant.name,
-                        avatar: participant.avatar,
+                        profile: all_profiles.entry(participant.id).or_insert_with(|| {
+                            ctx.db.profile().identity().find(participant.identity).unwrap()
+                        }).clone(),
                         role: participant.role,
                         vote_state: match ctx.db.ongoing_vote().participant_id().find(participant.id) {
                             None => VoteStateView::NotVoted,
@@ -217,7 +234,7 @@ pub fn my_participating_rooms(ctx: &ViewContext) -> Vec<RoomView> {
                         },
                     }).collect(),
                     current_deck: room.current_deck,
-                    vote_history: vote_history.collect(),
+                    vote_history: vote_history,
                     my_connections: vec![],
                 }
             });
