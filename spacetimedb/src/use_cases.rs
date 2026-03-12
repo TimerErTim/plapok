@@ -220,6 +220,8 @@ pub fn join_room(ctx: &ReducerContext, code: String) -> Result<(), String> {
 
 #[reducer]
 pub fn create_profile(ctx: &ReducerContext, name: String, avatar: Avatar) -> Result<(), String> {
+    log::info!("Creating profile for {}", ctx.sender());
+    validate_profile_name(&name)?;
     match ctx.db.profile().try_insert(Profile {
         identity: ctx.sender(),
         name: name,
