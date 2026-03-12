@@ -65,7 +65,7 @@ export default function FeedbackModal() {
                                 </TextField>
                             </Modal.Body>
                             <Modal.Footer>
-                                <Button variant="secondary" onPress={() => handleSubmitFeedback({ callback: renderProps.close })} isPending={isSubmitting}>
+                                <Button variant="primary" onPress={() => handleSubmitFeedback({ callback: renderProps.close })} isPending={isSubmitting}>
                                     {({ isPending }) => (
                                         <>
                                             {isPending && <Spinner color="current" size="sm" />}

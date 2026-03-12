@@ -1,10 +1,10 @@
-import { ParticipantRole, ParticipantView, RoomView } from "@/spacetimedb_bindings/types";
+import { ParticipantRole, ParticipantView, RoomView, VoteStateView } from "@/spacetimedb_bindings/types";
 import { reducers } from "@/spacetimedb_bindings";
 import { useReducer, useSpacetimeDB } from "spacetimedb/react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { Avatar, Button, Card, InputGroup, Label, ListBox, Modal, Select, Separator, Surface, SurfaceContext, TextField, Tooltip } from "@heroui/react";
-import { cx } from "tailwind-variants";
+import { Avatar, Button, Card, InputGroup, Label, ListBox, Modal, Select, Separator, Surface, SurfaceContext, TextArea, TextField, Tooltip } from "@heroui/react";
+import { cx, cn } from "tailwind-variants";
 import { getAvatar } from "@/hooks/useAvatar";
 import { formatRoleTag, roleTags } from "@/common/roles";
 import { FaCopy, FaGlobe, FaShare } from "react-icons/fa";
@@ -12,6 +12,8 @@ import { getShareableRoomLink } from "@/common/room";
 import RoomSharingModal from "./roomSharingModal";
 import RoomSettingsModal from "./roomSettingsModal";
 import FeedbackModal from "./feedbackModal";
+import CardSelection from "./cardSelection";
+import TopicArea from "./topicArea";
 
 function useMyParticipant(connectedRoom: RoomView): ParticipantView {
     const navigate = useNavigate()
@@ -38,8 +40,6 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
     const unrevealRoom = useReducer(reducers.unrevealRoom)
     const setParticipantRole = useReducer(reducers.setParticipantRole)
     const makeRoomPermanent = useReducer(reducers.makeRoomPermanent)
-    const cancelMyVote = useReducer(reducers.cancelMyVote)
-    const voteForCard = useReducer(reducers.voteForCard)
 
     // Myself
     const myParticipant = useMyParticipant(connectedRoom)
@@ -165,12 +165,16 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
 
 
     return (<>
-        <div className="grow grid grid-rows-[max-content_auto] grid-cols-[max-content_auto]">
+        <div className="grow grid grid-rows-[max-content_minmax(0,1fr)] grid-cols-[max-content_auto]">
             <div className="row-span-2">
                 <SidebarContent />
             </div>
+
             <div className="flex flex-row items-center justify-between">
-                <h1 className="text-2xl font-bold">{connectedRoom.currentTopic}</h1>
+                <div></div>
+                <div className="text-2xl font-bold">
+                    <TopicArea topic={localTopic} isReadOnly={!isModerator}/>
+                </div>
                 <div className="flex flex-col gap-2 items-end">
                     <div className="flex flex-row items-center gap-2">
                         {isModerator && <RoomSettingsModal connectedRoom={connectedRoom} />}
@@ -178,6 +182,11 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
                     </div>
                     <FeedbackModal />
                 </div>
+            </div>
+
+            <div className="flex flex-col gap-2 min-w-0">
+                <div className="grow bg-green-300">Test</div>
+                {isPlayer && <CardSelection connectedRoom={connectedRoom} myParticipant={myParticipant} />}
             </div>
         </div>
     </>
