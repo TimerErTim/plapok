@@ -129,6 +129,17 @@ pub struct OngoingVote {
     pub chosen_card_id: u64,
 }
 
+#[table(accessor = feedback, private)]
+pub struct Feedback {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    pub submitter_identity: Identity,
+    pub text: String,
+    pub timestamp: Timestamp,
+}
+
+// -----
 // Views
 #[view(accessor = my_profile, public)]
 pub fn my_profile(ctx: &ViewContext) -> Option<Profile> {

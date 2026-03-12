@@ -11,6 +11,7 @@ import { FaCopy, FaGlobe, FaShare } from "react-icons/fa";
 import { getShareableRoomLink } from "@/common/room";
 import RoomSharingModal from "./roomSharingModal";
 import RoomSettingsModal from "./roomSettingsModal";
+import FeedbackModal from "./feedbackModal";
 
 function useMyParticipant(connectedRoom: RoomView): ParticipantView {
     const navigate = useNavigate()
@@ -175,9 +176,7 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
                         {isModerator && <RoomSettingsModal connectedRoom={connectedRoom} />}
                         <RoomSharingModal roomCode={connectedRoom.code} />
                     </div>
-                    <Button variant="outline" onPress={() => { }}>
-                        Feedback
-                    </Button>
+                    <FeedbackModal />
                 </div>
             </div>
         </div>

@@ -49,6 +49,14 @@ export const DeleteRoom = __t.object("DeleteRoom", {
 });
 export type DeleteRoom = __Infer<typeof DeleteRoom>;
 
+export const Feedback = __t.object("Feedback", {
+  id: __t.u64(),
+  submitterIdentity: __t.identity(),
+  text: __t.string(),
+  timestamp: __t.timestamp(),
+});
+export type Feedback = __Infer<typeof Feedback>;
+
 export const OngoingVote = __t.object("OngoingVote", {
   participantId: __t.u64(),
   chosenCardId: __t.u64(),

@@ -8,9 +8,9 @@ use spacetimedb::{
 
 use crate::{
     model::{
-        Avatar, DeckCard, DeleteRoom, OngoingVote, Participant, ParticipantRole, Participation, Profile, Room, RoomRevealOutcome, RoomRevealVote, delete_room, ongoing_vote, participant, participation, profile, room, room_reveal_outcome
+        Avatar, DeckCard, DeleteRoom, Feedback, OngoingVote, Participant, ParticipantRole, Participation, Profile, Room, RoomRevealOutcome, RoomRevealVote, delete_room, feedback, ongoing_vote, participant, participation, profile, room, room_reveal_outcome
     },
-    tweaks::{default_deck, get_deletion_time, validate_profile_name},
+    tweaks::{default_deck, get_deletion_time, validate_feedback, validate_profile_name},
 };
 
 #[reducer()]
@@ -635,6 +635,26 @@ pub fn set_participant_role(
             log::trace!("Reseted vote for participant {}", target_participant.id);
         };
     }
+
+    Ok(())
+}
+
+#[reducer]
+pub fn submit_feedback(ctx: &ReducerContext, feedback: String) -> Result<(), String> {
+    let Some(_) = ctx.connection_id() else {
+        return Err("Not connected".to_string());
+    };
+
+    log::info!("Received feedback from {}", ctx.sender());
+    let trimmed_feedback = feedback.trim();
+    validate_feedback(trimmed_feedback)?;
+
+    ctx.db.feedback().insert(Feedback {
+        id: 0,
+        text: trimmed_feedback.to_string(),
+        submitter_identity: ctx.sender(),
+        timestamp: ctx.timestamp,
+    });
 
     Ok(())
 }

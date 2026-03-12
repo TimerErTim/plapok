@@ -17,6 +17,7 @@ import RevealRoomReducer from "../reveal_room_reducer";
 import SetParticipantRoleReducer from "../set_participant_role_reducer";
 import SetRoomDeckReducer from "../set_room_deck_reducer";
 import SetRoomTopicReducer from "../set_room_topic_reducer";
+import SubmitFeedbackReducer from "../submit_feedback_reducer";
 import UnrevealRoomReducer from "../unreveal_room_reducer";
 import VoteForCardReducer from "../vote_for_card_reducer";
 
@@ -31,6 +32,7 @@ export type RevealRoomParams = __Infer<typeof RevealRoomReducer>;
 export type SetParticipantRoleParams = __Infer<typeof SetParticipantRoleReducer>;
 export type SetRoomDeckParams = __Infer<typeof SetRoomDeckReducer>;
 export type SetRoomTopicParams = __Infer<typeof SetRoomTopicReducer>;
+export type SubmitFeedbackParams = __Infer<typeof SubmitFeedbackReducer>;
 export type UnrevealRoomParams = __Infer<typeof UnrevealRoomReducer>;
 export type VoteForCardParams = __Infer<typeof VoteForCardReducer>;
 

@@ -45,6 +45,7 @@ import RevealRoomReducer from "./reveal_room_reducer";
 import SetParticipantRoleReducer from "./set_participant_role_reducer";
 import SetRoomDeckReducer from "./set_room_deck_reducer";
 import SetRoomTopicReducer from "./set_room_topic_reducer";
+import SubmitFeedbackReducer from "./submit_feedback_reducer";
 import UnrevealRoomReducer from "./unreveal_room_reducer";
 import VoteForCardReducer from "./vote_for_card_reducer";
 
@@ -87,6 +88,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_participant_role", SetParticipantRoleReducer),
   __reducerSchema("set_room_deck", SetRoomDeckReducer),
   __reducerSchema("set_room_topic", SetRoomTopicReducer),
+  __reducerSchema("submit_feedback", SubmitFeedbackReducer),
   __reducerSchema("unreveal_room", UnrevealRoomReducer),
   __reducerSchema("vote_for_card", VoteForCardReducer),
 );

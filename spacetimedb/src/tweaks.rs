@@ -19,6 +19,7 @@ pub fn validate_profile_name(name: &str) -> Result<(), String> {
 }
 
 pub fn default_deck() -> Vec<DeckCard> {
+    // TODO: implement room creation time deck specification
     let symbols = vec![
         // Fibonacci Planning Poker symbols commonly used:
         // ["0", "1", "2", "3", "5", "8", "13", "21", "34", "?", "∞", "☕"]
@@ -36,4 +37,11 @@ pub fn default_deck() -> Vec<DeckCard> {
     ];
     
     return symbols.into_iter().enumerate().map(|(i, symbol)| DeckCard { id: i as u64 + 1, symbol }).collect();
+}
+
+pub fn validate_feedback(feedback: &str) -> Result<(), String> {
+    if feedback.len() > 1000 {
+        return Err("Feedback must be less than 1000 characters".to_string());
+    }
+    Ok(())
 }
