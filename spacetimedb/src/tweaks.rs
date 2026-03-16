@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use spacetimedb::{ScheduleAt, Timestamp};
+use spacetimedb::Timestamp;
 
 use crate::model::{DeckCard, Room};
 
@@ -36,7 +36,7 @@ pub fn default_deck() -> Vec<DeckCard> {
         "☕".to_string(),
     ];
     
-    return symbols.into_iter().enumerate().map(|(i, symbol)| DeckCard { id: i as u64 + 1, symbol }).collect();
+    symbols.into_iter().enumerate().map(|(i, symbol)| DeckCard { id: i as u64 + 1, symbol }).collect()
 }
 
 pub fn validate_feedback(feedback: &str) -> Result<(), String> {

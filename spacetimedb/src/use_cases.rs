@@ -1,9 +1,8 @@
-use std::time::Duration;
 
 use rand::Rng;
 use rustc_hash::FxHashMap;
 use spacetimedb::{
-    ConnectionId, DbContext, Identity, ReducerContext, ScheduleAt, Table, TryInsertError, rand, reducer, spacetimedb_lib::connection_id
+    ConnectionId, Identity, ReducerContext, ScheduleAt, Table, TryInsertError, rand, reducer
 };
 
 use crate::{
@@ -23,14 +22,14 @@ pub fn handle_delete_room(ctx: &ReducerContext, row: DeleteRoom) -> Result<(), S
         .db
         .room()
         .id()
-        .find(&row.room_id)
+        .find(row.room_id)
         .ok_or("Room not found")?;
     log::info!("Deleting room {}", room.code);
     if ctx.db.room().id().delete(room.id) {
         log::warn!("Room {} was already deleted", room.code);
     }
 
-    let deleted_participants_count = ctx.db.participant().by_room_id().filter(room.id).map(|participant| {
+    let _deleted_participants_count = ctx.db.participant().by_room_id().filter(room.id).map(|participant| {
         ctx.db.ongoing_vote().participant_id().delete(participant.id);
         ctx.db.participant().delete(participant);
     }).count();
@@ -211,7 +210,7 @@ pub fn join_room(ctx: &ReducerContext, code: String) -> Result<(), String> {
         room.code
     );
     ctx.db.participation().insert(Participation {
-        connection_id: connection_id,
+        connection_id,
         participant_id: participant.id,
     });
 
@@ -224,15 +223,15 @@ pub fn create_profile(ctx: &ReducerContext, name: String, avatar: Avatar) -> Res
     validate_profile_name(&name)?;
     match ctx.db.profile().try_insert(Profile {
         identity: ctx.sender(),
-        name: name,
-        avatar: avatar,
+        name,
+        avatar,
     }) {
         Ok(_) => Ok(()),
         Err(e) => match e {
             TryInsertError::UniqueConstraintViolation(e) => {
                 Err(format!("User already has a profile: {}", e))
             }
-            _ => Err(e).unwrap(),
+            _ => panic!("{:?}", e),
         },
     }
 }
@@ -624,7 +623,7 @@ pub fn set_participant_role(
         role
     );
     let target_participant = ctx.db.participant().id().update(Participant {
-        role: role,
+        role,
         ..target_participant
     });
 

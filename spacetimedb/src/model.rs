@@ -1,6 +1,6 @@
 use rustc_hash::FxHashMap;
 use spacetimedb::{
-    AnonymousViewContext, ConnectionId, Identity, ScheduleAt, SpacetimeType, Timestamp,
+    ConnectionId, Identity, ScheduleAt, SpacetimeType, Timestamp,
     ViewContext, table, view,
 };
 
@@ -245,7 +245,7 @@ pub fn my_participating_rooms(ctx: &ViewContext) -> Vec<RoomView> {
                         },
                     }).collect(),
                     current_deck: room.current_deck,
-                    vote_history: vote_history,
+                    vote_history,
                     my_connections: vec![],
                 }
             });

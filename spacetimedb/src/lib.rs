@@ -1,17 +1,13 @@
-use std::time::Duration;
 
 use spacetimedb::{
-    Identity, ReducerContext, ScheduleAt, SpacetimeType, Table, Timestamp, ViewContext, reducer,
-    table, view,
+    ReducerContext, reducer,
 };
 
-use crate::{model::{participation, room}, use_cases::unregister_participation};
+use crate::{model::participation, use_cases::unregister_participation};
 
 mod tweaks;
 mod model;
 mod use_cases;
-
-const ROOT_BOOK_ID: u64 = 1;
 
 // ---------------------------------------------------------------------------
 // Lifecycle
