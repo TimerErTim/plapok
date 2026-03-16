@@ -14,11 +14,11 @@ export default function RoomSharingModal({ roomCode }: { roomCode: string }) {
 
     const sharePayload = {
         title: "Join my Plapok Room",
-        text: "Accelerate our spring planning! Join my planning poker room:",
+        text: "Accelerate our spring planning! Join my planning poker room:\n",
         url: sharingUrl,
     }
 
-    const canShare = navigator.canShare && navigator.canShare(sharePayload) && false
+    const canShare = navigator.canShare && navigator.canShare(sharePayload)
 
     function handleUrlButtonPress() {
         if (canShare) {
