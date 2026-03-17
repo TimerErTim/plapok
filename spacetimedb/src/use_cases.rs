@@ -450,6 +450,9 @@ pub fn vote_for_card(ctx: &ReducerContext, card_id: u64) -> Result<(), String> {
         .id()
         .find(participant.room_id)
         .ok_or("Room not found")?;
+    if room.revealed {
+        return Err("Room has already been revealed".to_string());
+    }
     if !room.current_deck.iter().any(|card| card.id == card_id) {
         return Err("Card not found in deck".to_string());
     }
@@ -481,6 +484,15 @@ pub fn cancel_my_vote(ctx: &ReducerContext) -> Result<(), String> {
         .participant().id().find(participation.participant_id).ok_or("Participant not found")?;
     if participant.role != ParticipantRole::Player {
         return Err("Only players can cancel their vote".to_string());
+    }
+    let room = ctx
+        .db
+        .room()
+        .id()
+        .find(participant.room_id)
+        .ok_or("Room not found")?;
+    if room.revealed {
+        return Err("Room has already been revealed, cannot change your votes now".to_string());
     }
     log::info!("Cancelling vote for participant {}", participant.id);
     if !ctx.db.ongoing_vote().participant_id().delete(participant.id) {
