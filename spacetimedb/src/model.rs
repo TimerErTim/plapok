@@ -150,6 +150,7 @@ pub struct RoomView {
     pub code: String,
     pub permanent: bool,
     pub current_topic: String,
+    pub revealed: bool,
     pub current_deck: Vec<DeckCard>,
     pub participants: Vec<ParticipantView>,
     pub vote_history: Vec<VoteResultRecordView>,
@@ -264,6 +265,7 @@ pub fn my_participating_rooms(ctx: &ViewContext) -> Vec<RoomView> {
                     code: room.code,
                     permanent: room.permanent,
                     current_topic: room.current_topic,
+                    revealed: room.revealed,
                     participants: all_active_participants
                         .map(|room_participant| ParticipantView {
                             profile: all_profiles

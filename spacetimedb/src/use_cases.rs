@@ -1,13 +1,14 @@
-
 use rand::Rng;
 use rustc_hash::FxHashMap;
 use spacetimedb::{
-    ConnectionId, Identity, ReducerContext, ScheduleAt, Table, TryInsertError, rand, reducer
+    ConnectionId, Identity, ReducerContext, ScheduleAt, Table, TryInsertError, rand, reducer,
 };
 
 use crate::{
     model::{
-        Avatar, DeckCard, DeleteRoom, Feedback, OngoingVote, Participant, ParticipantRole, Participation, Profile, Room, RoomRevealOutcome, RoomRevealVote, delete_room, feedback, ongoing_vote, participant, participation, profile, room, room_reveal_outcome
+        Avatar, DeckCard, DeleteRoom, Feedback, OngoingVote, Participant, ParticipantRole,
+        Participation, Profile, Room, RoomRevealOutcome, RoomRevealVote, delete_room, feedback,
+        ongoing_vote, participant, participation, profile, room, room_reveal_outcome,
     },
     tweaks::{default_deck, get_deletion_time, validate_feedback, validate_profile_name},
 };
@@ -29,10 +30,19 @@ pub fn handle_delete_room(ctx: &ReducerContext, row: DeleteRoom) -> Result<(), S
         log::warn!("Room {} was already deleted", room.code);
     }
 
-    let _deleted_participants_count = ctx.db.participant().by_room_id().filter(room.id).map(|participant| {
-        ctx.db.ongoing_vote().participant_id().delete(participant.id);
-        ctx.db.participant().delete(participant);
-    }).count();
+    let _deleted_participants_count = ctx
+        .db
+        .participant()
+        .by_room_id()
+        .filter(room.id)
+        .map(|participant| {
+            ctx.db
+                .ongoing_vote()
+                .participant_id()
+                .delete(participant.id);
+            ctx.db.participant().delete(participant);
+        })
+        .count();
 
     let deleted_particip_count = ctx.db.participant().by_room_id().delete(room.id);
     log::debug!(
@@ -343,7 +353,10 @@ pub fn make_room_permanent(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
-pub fn ensure_moderator_participant(ctx: &ReducerContext, connection_id: ConnectionId) -> Result<Participant, String> {
+pub fn ensure_moderator_participant(
+    ctx: &ReducerContext,
+    connection_id: ConnectionId,
+) -> Result<Participant, String> {
     let participation = ctx
         .db
         .participation()
@@ -417,7 +430,12 @@ pub fn set_room_deck(ctx: &ReducerContext, new_deck: Vec<DeckCard>) -> Result<()
         if participant.role != ParticipantRole::Player {
             continue;
         }
-        if ctx.db.ongoing_vote().participant_id().delete(participant.id) {
+        if ctx
+            .db
+            .ongoing_vote()
+            .participant_id()
+            .delete(participant.id)
+        {
             log::trace!("Reseted vote for participant {}", participant.id);
         };
     }
@@ -431,7 +449,11 @@ pub fn vote_for_card(ctx: &ReducerContext, card_id: u64) -> Result<(), String> {
         return Err("Not connected".to_string());
     };
 
-    log::debug!("Voting for card {} for connection {}", card_id, connection_id);
+    log::debug!(
+        "Voting for card {} for connection {}",
+        card_id,
+        connection_id
+    );
     let participation = ctx
         .db
         .participation()
@@ -440,9 +462,12 @@ pub fn vote_for_card(ctx: &ReducerContext, card_id: u64) -> Result<(), String> {
         .ok_or("Not in a room")?;
     let participant = ctx
         .db
-        .participant().id().find(participation.participant_id).ok_or("Participant not found")?;
-    if participant.role != ParticipantRole::Player {
-        return Err("Only players can vote".to_string());
+        .participant()
+        .id()
+        .find(participation.participant_id)
+        .ok_or("Participant not found")?;
+    if participant.role == ParticipantRole::Spectator {
+        return Err("Spectators cannot vote".to_string());
     }
     let room = ctx
         .db
@@ -456,8 +481,14 @@ pub fn vote_for_card(ctx: &ReducerContext, card_id: u64) -> Result<(), String> {
     if !room.current_deck.iter().any(|card| card.id == card_id) {
         return Err("Card not found in deck".to_string());
     }
-    if ctx.db.ongoing_vote().participant_id().find(participant.id).is_some() {
-        return Err("Player has already voted".to_string());
+    if ctx
+        .db
+        .ongoing_vote()
+        .participant_id()
+        .find(participant.id)
+        .is_some()
+    {
+        return Err("You have already voted".to_string());
     }
     log::info!("Player {} voting for card {}", participant.id, card_id);
     ctx.db.ongoing_vote().insert(OngoingVote {
@@ -481,9 +512,12 @@ pub fn cancel_my_vote(ctx: &ReducerContext) -> Result<(), String> {
         .ok_or("Not in a room")?;
     let participant = ctx
         .db
-        .participant().id().find(participation.participant_id).ok_or("Participant not found")?;
-    if participant.role != ParticipantRole::Player {
-        return Err("Only players can cancel their vote".to_string());
+        .participant()
+        .id()
+        .find(participation.participant_id)
+        .ok_or("Participant not found")?;
+    if participant.role == ParticipantRole::Spectator {
+        return Err("Spectators cannot cancel their vote".to_string());
     }
     let room = ctx
         .db
@@ -495,7 +529,12 @@ pub fn cancel_my_vote(ctx: &ReducerContext) -> Result<(), String> {
         return Err("Room has already been revealed, cannot change your votes now".to_string());
     }
     log::info!("Cancelling vote for participant {}", participant.id);
-    if !ctx.db.ongoing_vote().participant_id().delete(participant.id) {
+    if !ctx
+        .db
+        .ongoing_vote()
+        .participant_id()
+        .delete(participant.id)
+    {
         log::debug!("No vote to cancel for participant {}", participant.id);
     }
     Ok(())
@@ -524,7 +563,7 @@ pub fn reveal_room(ctx: &ReducerContext) -> Result<(), String> {
         .map(|card| (card.id, card))
         .collect::<FxHashMap<_, _>>();
     for participant in ctx.db.participant().by_room_id().filter(room.id) {
-        if participant.role != ParticipantRole::Player {
+        if participant.role != ParticipantRole::Player || ctx.db.participation().by_participant_id().filter(participant.id).count() == 0 {
             continue;
         }
         log::trace!("Checking vote for participant {}", participant.id);
@@ -583,7 +622,12 @@ pub fn unreveal_room(ctx: &ReducerContext) -> Result<(), String> {
     // Clear all ongoing votes
     log::debug!("Clearing all ongoing votes for room {}", room.code);
     for participant in ctx.db.participant().by_room_id().filter(room.id) {
-        if ctx.db.ongoing_vote().participant_id().delete(participant.id) {
+        if ctx
+            .db
+            .ongoing_vote()
+            .participant_id()
+            .delete(participant.id)
+        {
             log::trace!("Reseted vote for participant {}", participant.id);
         };
     }
@@ -601,10 +645,7 @@ pub fn set_participant_role(
         return Err("Not connected".to_string());
     };
 
-    log::debug!(
-        "Setting participant role for identity {}",
-        identity
-    );
+    log::debug!("Setting participant role for identity {}", identity);
     let participation = ctx
         .db
         .participation()
@@ -640,9 +681,14 @@ pub fn set_participant_role(
     });
 
     // Reset the current vote if new_role is not Player
-    if target_participant.role != ParticipantRole::Player {
+    if target_participant.role == ParticipantRole::Spectator {
         log::debug!("Resetting vote for participant {}", target_participant.id);
-        if ctx.db.ongoing_vote().participant_id().delete(target_participant.id) {
+        if ctx
+            .db
+            .ongoing_vote()
+            .participant_id()
+            .delete(target_participant.id)
+        {
             log::trace!("Reseted vote for participant {}", target_participant.id);
         };
     }
