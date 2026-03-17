@@ -40,6 +40,28 @@ export function getAvatar(profile: ProfileProps | null) {
             "614335",
             "0a835b",
         ],
+        mouth: [
+            "default",
+            "smile",
+            "eating",
+            "grimace",
+            "tongue",
+            "twinkle",
+            "screamOpen"
+        ],
+        eyes: [
+            "closed",
+            "default",
+            "eyeRoll",
+            "happy",
+            "hearts",
+            "side",
+            "squint",
+            "surprised",
+            "wink",
+            "winkWacky",
+            "xDizzy"
+        ],
         scale: 80,
         "seed": seed
     });
