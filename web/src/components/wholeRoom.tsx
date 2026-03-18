@@ -1,13 +1,14 @@
-import { ParticipantRole, ParticipantView, RoomView, VoteStateView } from "@/spacetimedb_bindings/types";
+import { ParticipantRole, ParticipantView, Profile, RoomView, VoteStateView } from "@/spacetimedb_bindings/types";
 import { reducers } from "@/spacetimedb_bindings";
 import { useReducer, useSpacetimeDB } from "spacetimedb/react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { Avatar, Button, Card, InputGroup, Label, ListBox, Modal, Select, Separator, Surface, SurfaceContext, TextArea, TextField, Tooltip } from "@heroui/react";
+import { Avatar, Button, Card, Drawer, InputGroup, Label, ListBox, Modal, ScrollShadow, Select, Separator, Surface, SurfaceContext, TextArea, TextField, Tooltip } from "@heroui/react";
 import { cx, cn } from "tailwind-variants";
 import { getAvatar } from "@/hooks/useAvatar";
 import { formatRoleTag, roleTags } from "@/common/roles";
 import { FaCopy, FaGlobe, FaShare } from "react-icons/fa";
+import { FiMenu } from "react-icons/fi";
 import { getShareableRoomLink } from "@/common/room";
 import RoomSharingModal from "./roomSharingModal";
 import RoomSettingsModal from "./roomSettingsModal";
@@ -17,6 +18,8 @@ import TopicArea from "./topicArea";
 import CurrentVoting from "./currentVoting";
 import RevealCardsSection from "./revealCardsSection";
 import RevealedVote from "./revealedVote";
+import { formatDateTime } from "@/common/timestamp";
+import SidebarRoom from "./sidebarRoom";
 
 function useMyParticipant(connectedRoom: RoomView): ParticipantView {
     const navigate = useNavigate()
@@ -37,12 +40,7 @@ function useMyParticipant(connectedRoom: RoomView): ParticipantView {
 }
 
 export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }) {
-    const setRoomTopic = useReducer(reducers.setRoomTopic)
-    const setRoomDeck = useReducer(reducers.setRoomDeck)
-    const revealRoom = useReducer(reducers.revealRoom)
-    const unrevealRoom = useReducer(reducers.unrevealRoom)
     const setParticipantRole = useReducer(reducers.setParticipantRole)
-    const makeRoomPermanent = useReducer(reducers.makeRoomPermanent)
 
     // Myself
     const myParticipant = useMyParticipant(connectedRoom)
@@ -50,131 +48,29 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
     const isPlayer = myParticipant.role.tag === ParticipantRole.Player.tag
     const isSpectator = myParticipant.role.tag === ParticipantRole.Spectator.tag
 
-    // Reusable Sidebar Content (for Desktop aside and Mobile drawer)
-    const SidebarContent = () => (
-        <Surface className="flex-col gap-6 grow p-4 hidden sm:flex min-h-0 overflow-y-auto">
-            {/* Participants Section */}
-            <div className="flex flex-col gap-3">
-                <h3 className="text-sm font-bold uppercase text-default-400 tracking-wider">Participants ({connectedRoom.participants.length})</h3>
-                <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-2">
-                    {connectedRoom.participants.map((user) => {
-                        const canEditRole = isModerator || user.profile.identity.equals(myParticipant.profile.identity);
-                        const avatar = getAvatar(user.profile)
-                        return (
-                            <div key={user.profile.identity.toString()} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-default-100/50 transition-colors">
-                                <div className="flex items-center gap-2">
-                                    <Avatar size="sm">
-                                        <Avatar.Image src={avatar.toDataUri()} />
-                                    </Avatar>
-                                    <span className={cx("text-sm", user.profile.identity.equals(myParticipant.profile.identity) && "font-semibold")}>
-                                        {user.profile.name}
-                                    </span>
-                                </div>
-                                <Select
-                                    isDisabled={!canEditRole}
-                                    value={user.role.tag}
-                                    onChange={(value) => setParticipantRole({ identity: user.profile.identity, role: { tag: value } as any as ParticipantRole })}
-                                    className="max-w-[110px] h-8"
-                                    aria-label="Select Role"
-                                >
-                                    <Select.Trigger>
-                                        <Select.Value />  {/* TODO: Add loading indicator */}
-                                        <Select.Indicator />
-                                    </Select.Trigger>
-                                    <Select.Popover>
-                                        <ListBox>
-                                            {roleTags.map((role) => (
-                                                <ListBox.Item key={role} id={role} textValue={formatRoleTag(role)}>
-                                                    {formatRoleTag(role)}
-                                                    <ListBox.ItemIndicator />
-                                                </ListBox.Item>
-                                            ))}
-                                        </ListBox>
-                                    </Select.Popover>
-                                </Select>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <Separator className="opacity-50" />
-
-            {/* Last Results Section */}
-            <div className="flex flex-col gap-3">
-                <h3 className="text-sm font-bold uppercase text-default-400 tracking-wider">Last Round Results</h3>
-                {connectedRoom.voteHistory.length === 0 ? (
-                    <p className="text-tiny text-default-400 italic">No votes yet.</p>
-                ) : (
-                    <div className="flex flex-col gap-2 pt-2">
-                        {connectedRoom.voteHistory.map((data) => {
-                            const voteMap = new Map<number, number>()
-                            const cardMap = new Map<number, string>()
-                            for (const vote of data.votes) {
-                                voteMap.set(Number(vote.chosenCardId), (voteMap.get(Number(vote.chosenCardId)) || 0) + 1)
-                                cardMap.set(Number(vote.chosenCardId), vote.chosenCardSymbol)
-                            }
-                            const maxCount = Math.max(...voteMap.values())
-                            return (
-                                <div key={data.timestamp.toISOString()} className="flex flex-col items-center gap-2 text-sm">
-                                    <span>{data.timestamp.toISOString()}</span>
-                                    <div className="flex items-center gap-1">
-                                        {Array.from(voteMap.entries()).map(([cardId, count]) => {
-                                            const percentage = count / maxCount * 100;
-                                            return (
-                                                <div key={cardId} className="flex gap-2">
-                                                    <span className="font-mono font-bold w-6 text-right">{cardMap.get(cardId)}</span>
-                                                    <Tooltip>
-                                                        <Tooltip.Trigger>
-                                                            <div className="flex-1 h-6 bg-default-100 rounded-full overflow-hidden relative cursor-help">
-                                                                <div className="h-full bg-primary/40 absolute left-0 top-0 rounded-full transition-all" style={{ width: `${percentage}%` }}></div>
-                                                                <span className="absolute inset-0 flex items-center justify-end px-2 text-tiny font-medium z-10 mix-blend-multiply">{count} votes</span>
-                                                            </div>
-                                                        </Tooltip.Trigger>
-
-                                                        <Tooltip.Content showArrow placement="right">
-                                                            <Tooltip.Arrow />
-                                                            <div className="px-1 py-2">
-                                                                <p className="font-bold text-tiny mb-1">
-                                                                    Voted by:
-                                                                </p>
-                                                                <ul className="list-disc pl-4 text-tiny">
-                                                                    {data.votes
-                                                                        .filter(v => Number(v.chosenCardId) === cardId)
-                                                                        .map(v => <li key={v.profile.identity.toString()}>
-                                                                            <Avatar size="sm" className="text-tiny font-bold">
-                                                                                <Avatar.Image src={getAvatar(v.profile).toDataUri()} />
-                                                                            </Avatar>
-                                                                            {v.profile.name}
-                                                                        </li>)}
-                                                                </ul>
-                                                            </div>
-                                                        </Tooltip.Content>
-                                                    </Tooltip>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                )}
-            </div>
-        </Surface>
-    );
-
+    const sidebarContent = <SidebarRoom connectedRoom={connectedRoom} myParticipant={myParticipant} />
 
     return (<>
-        <div className="grow shrink grid grid-rows-[max-content_minmax(0,1fr)] grid-cols-[max-content_auto] min-h-0">
-            <div className="row-span-2 min-h-0">
-                <SidebarContent />
+        <div className="grow shrink grid grid-rows-[max-content_minmax(0,1fr)] grid-cols-[max-content_auto] min-h-0 space-x-4">
+            <div className="row-span-2 min-h-0 hidden sm:block">
+                {sidebarContent}
             </div>
 
-            <div className="flex flex-row items-center justify-between gap-4">
-                <div></div>
-                <div className="text-2xl font-bold grow h-full py-1">
-                    <TopicArea topic={connectedRoom.currentTopic} isReadOnly={!isModerator}/>
+            <div className="flex flex-row items-center justify-between gap-4 col-start-2">
+                <div className="flex flex-col gap-1 items-start font-bold grow h-full py-1">
+                    <Drawer>
+                        <Button variant="ghost" className="sm:hidden" size="sm"><FiMenu /> Room Details</Button>
+                        <Drawer.Backdrop>
+                            <Drawer.Content placement="left" className="h-full p-0 w-fit">
+                                <Drawer.Dialog className="w-fit h-full p-0">
+                                    <Drawer.Body className="h-full">
+                                        {sidebarContent}
+                                    </Drawer.Body>
+                                </Drawer.Dialog>
+                            </Drawer.Content>
+                        </Drawer.Backdrop>
+                    </Drawer>
+                    <TopicArea topic={connectedRoom.currentTopic} isReadOnly={!isModerator} />
                 </div>
                 <div className="flex flex-col gap-2 items-end">
                     <div className="flex flex-row items-center gap-2">
@@ -185,9 +81,9 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
                 </div>
             </div>
 
-            <div className="flex flex-col gap-2 min-w-0 min-h-0 items-center">
+            <div className="flex flex-col gap-2 min-w-0 min-h-0 items-center col-start-2">
                 <div className="grow py-4 min-h-0 w-full flex">
-                    <CurrentVoting connectedRoom={connectedRoom}/>
+                    <CurrentVoting connectedRoom={connectedRoom} />
                 </div>
                 <RevealCardsSection connectedRoom={connectedRoom} myParticipant={myParticipant as ParticipantView} />
                 {connectedRoom.revealed && <RevealedVote connectedRoom={connectedRoom} />}

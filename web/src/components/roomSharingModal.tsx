@@ -1,11 +1,10 @@
-import { Button, Description, InputGroup, Label, labelVariants, Popover, Separator, TextField } from "@heroui/react";
+import { Button, Description, Label, labelVariants, Popover, Separator } from "@heroui/react";
 
 import { Modal } from "@heroui/react";
 import { FaCopy, FaShare, FaShareAlt } from "react-icons/fa";
 import { getShareableRoomLink } from "@/common/room";
 import QRCode from "react-qr-code";
 import { useState } from "react";
-import { AnyARecord } from "node:dns";
 
 export default function RoomSharingModal({ roomCode }: { roomCode: string }) {
     const sharingUrl = getShareableRoomLink(roomCode)

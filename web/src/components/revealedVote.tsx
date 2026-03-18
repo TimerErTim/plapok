@@ -52,7 +52,7 @@ export default function RevealedVote({ connectedRoom }: { connectedRoom: RoomVie
                         return (
                             <div key={cardId} className="flex flex-col items-center justify-center gap-1 grow h-full text-xs">
                                 <Tooltip delay={0} closeDelay={250} >
-                                    <Tooltip.Trigger className="relative grow w-4 rounded-2xl overflow-clip bg-surface-tertiary">
+                                    <Tooltip.Trigger className="relative grow w-4 rounded-2xl overflow-clip bg-surface-tertiary cursor-help">
                                         <div className="absolute bottom-0 w-full bg-accent" style={{ height: `${meterValue}%` }} />
                                     </Tooltip.Trigger>
                                     <Tooltip.Content showArrow placement="top left" className="shadow-xl flex flex-col gap-1.5 p-3 pt-2">

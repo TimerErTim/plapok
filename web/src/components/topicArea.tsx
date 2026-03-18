@@ -41,5 +41,5 @@ export default function TopicArea({ topic, isReadOnly }: { topic: string, isRead
         setLocalTopic(e.target.value)
     }
 
-    return <TextArea value={localTopic ?? topic} onChange={handleTopicChange} readOnly={isReadOnly} fullWidth={true} className={cn("text-sm sm:text-base !h-full", isReadOnly && "!bg-transparent")} inert={isReadOnly} />
+    return <TextArea value={localTopic ?? topic} onChange={handleTopicChange} readOnly={isReadOnly} fullWidth={true} className={cn("text-xs sm:text-base !h-full", isReadOnly && "!bg-transparent")} inert={isReadOnly} />
 }
