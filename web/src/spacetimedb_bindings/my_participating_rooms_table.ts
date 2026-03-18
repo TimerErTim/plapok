@@ -20,6 +20,7 @@ export default __t.row({
   code: __t.string(),
   permanent: __t.bool(),
   currentTopic: __t.string().name("current_topic"),
+  revealed: __t.bool(),
   get currentDeck() {
     return __t.array(DeckCard).name("current_deck");
   },

@@ -53,7 +53,7 @@ export default function CardSelection({ connectedRoom, myParticipant }: { connec
         }
     }
                                                       
-    return <Surface>
+    return <Surface className="w-full">
         <ScrollShadow hideScrollBar orientation="horizontal" className="min-w-0 mx-auto overflow-y-visible flex flex-row justify-center-safe items-center gap-2 pb-2 pt-4 px-8 -mt-2 overflow-x-auto">
 
             {connectedRoom.currentDeck.map((card, index) => {

@@ -14,6 +14,9 @@ import RoomSettingsModal from "./roomSettingsModal";
 import FeedbackModal from "./feedbackModal";
 import CardSelection from "./cardSelection";
 import TopicArea from "./topicArea";
+import CurrentVoting from "./currentVoting";
+import RevealCardsSection from "./revealCardsSection";
+import RevealedVote from "./revealedVote";
 
 function useMyParticipant(connectedRoom: RoomView): ParticipantView {
     const navigate = useNavigate()
@@ -47,11 +50,9 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
     const isPlayer = myParticipant.role.tag === ParticipantRole.Player.tag
     const isSpectator = myParticipant.role.tag === ParticipantRole.Spectator.tag
 
-    const [localTopic, setLocalTopic] = useState(connectedRoom.currentTopic)
-
     // Reusable Sidebar Content (for Desktop aside and Mobile drawer)
     const SidebarContent = () => (
-        <Surface className="flex flex-col gap-6 grow p-4">
+        <Surface className="flex-col gap-6 grow p-4 hidden sm:flex min-h-0 overflow-y-auto">
             {/* Participants Section */}
             <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-bold uppercase text-default-400 tracking-wider">Participants ({connectedRoom.participants.length})</h3>
@@ -165,15 +166,15 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
 
 
     return (<>
-        <div className="grow grid grid-rows-[max-content_minmax(0,1fr)] grid-cols-[max-content_auto]">
-            <div className="row-span-2">
+        <div className="grow shrink grid grid-rows-[max-content_minmax(0,1fr)] grid-cols-[max-content_auto] min-h-0">
+            <div className="row-span-2 min-h-0">
                 <SidebarContent />
             </div>
 
-            <div className="flex flex-row items-center justify-between">
+            <div className="flex flex-row items-center justify-between gap-4">
                 <div></div>
-                <div className="text-2xl font-bold">
-                    <TopicArea topic={localTopic} isReadOnly={!isModerator}/>
+                <div className="text-2xl font-bold grow h-full py-1">
+                    <TopicArea topic={connectedRoom.currentTopic} isReadOnly={!isModerator}/>
                 </div>
                 <div className="flex flex-col gap-2 items-end">
                     <div className="flex flex-row items-center gap-2">
@@ -184,9 +185,13 @@ export default function WholeRoom({ connectedRoom }: { connectedRoom: RoomView }
                 </div>
             </div>
 
-            <div className="flex flex-col gap-2 min-w-0">
-                <div className="grow bg-green-300">Test</div>
-                {isPlayer && <CardSelection connectedRoom={connectedRoom} myParticipant={myParticipant} />}
+            <div className="flex flex-col gap-2 min-w-0 min-h-0 items-center">
+                <div className="grow py-4 min-h-0 w-full flex">
+                    <CurrentVoting connectedRoom={connectedRoom}/>
+                </div>
+                <RevealCardsSection connectedRoom={connectedRoom} myParticipant={myParticipant as ParticipantView} />
+                {connectedRoom.revealed && <RevealedVote connectedRoom={connectedRoom} />}
+                {!isSpectator && !connectedRoom.revealed && <CardSelection connectedRoom={connectedRoom} myParticipant={myParticipant} />}
             </div>
         </div>
     </>

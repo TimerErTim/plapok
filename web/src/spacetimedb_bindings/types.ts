@@ -156,6 +156,7 @@ export const RoomView = __t.object("RoomView", {
   code: __t.string(),
   permanent: __t.bool(),
   currentTopic: __t.string(),
+  revealed: __t.bool(),
   get currentDeck() {
     return __t.array(DeckCard);
   },
