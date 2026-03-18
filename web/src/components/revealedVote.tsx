@@ -43,7 +43,7 @@ export default function RevealedVote({ connectedRoom }: { connectedRoom: RoomVie
 
     return (
         <Card className="z-20 w-full ml-4 border border-default-200 bg-content1/80 backdrop-blur-lg shadow-2xl p-0">
-            <Card.Content className="flex flex-row items-center gap-6 text-center">
+            <Card.Content className="flex flex-row items-center text-center">
                 <ScrollShadow orientation="horizontal" hideScrollBar className="h-full p-2 grow grid grid-flow-col auto-cols-[minmax(min,1fr)] gap-2 overflow-x-auto w-full">
                     {Object.entries(stats.votesByCardId).map(([cardId, voters]) => {
                         const cardSymbol = connectedRoom.currentDeck.find(card => card.id.toString() === cardId)?.symbol;
@@ -74,7 +74,7 @@ export default function RevealedVote({ connectedRoom }: { connectedRoom: RoomVie
                     })}
                 </ScrollShadow>
                 <Separator orientation="vertical" />
-                <div className="flex flex-row gap-4 items-center p-4">
+                <div className="flex flex-row gap-4 items-center p-4 ">
                     <Badge.Anchor>
                         <ProgressCircle value={stats.agreement} className="-rotate-y-180" size="lg" color={color}>
                             <ProgressCircle.Track className="size-15">
