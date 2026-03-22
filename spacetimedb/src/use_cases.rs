@@ -124,7 +124,7 @@ pub fn synchronize_participant_with_profile(
                     room_id: room.id,
                     name: profile.name.clone(),
                     avatar: profile.avatar.clone(),
-                    role: ParticipantRole::Player,
+                    role: ParticipantRole::Moderator,
                 })
             },
             |existing_participant| {
@@ -563,7 +563,15 @@ pub fn reveal_room(ctx: &ReducerContext) -> Result<(), String> {
         .map(|card| (card.id, card))
         .collect::<FxHashMap<_, _>>();
     for participant in ctx.db.participant().by_room_id().filter(room.id) {
-        if participant.role == ParticipantRole::Spectator || ctx.db.participation().by_participant_id().filter(participant.id).count() == 0 {
+        if participant.role == ParticipantRole::Spectator
+            || ctx
+                .db
+                .participation()
+                .by_participant_id()
+                .filter(participant.id)
+                .count()
+                == 0
+        {
             continue;
         }
         log::trace!("Checking vote for participant {}", participant.id);
