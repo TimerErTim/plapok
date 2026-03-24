@@ -20,9 +20,6 @@ export default function TopicArea({ topic, isReadOnly }: { topic: string, isRead
         }
         debounceRef.current = setTimeout(() => {
             setRoomTopic({ topic: localTopic })
-                .then(() => {
-                    setLocalTopic(undefined)
-                })
                 .catch((error) => {
                     console.error(error)
                 })
@@ -36,6 +33,14 @@ export default function TopicArea({ topic, isReadOnly }: { topic: string, isRead
             }
         }
     }, [localTopic, isReadOnly, setRoomTopic])
+
+    useEffect(() => {
+        // If topic has been updated and it matchs localtopic, reset localtopic to default
+        // If not matching, the user is still editing
+        if (topic == localTopic) {
+            setLocalTopic(undefined)
+        }
+    }, [topic])
 
     function handleTopicChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
         setLocalTopic(e.target.value)
