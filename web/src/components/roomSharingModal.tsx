@@ -13,7 +13,7 @@ export default function RoomSharingModal({ roomCode }: { roomCode: string }) {
 
     const sharePayload = {
         title: "Join my Plapok Room",
-        text: "Accelerate our spring planning! Join my planning poker room:\n",
+        text: "Accelerate our sprint planning! Join my planning poker room:\n",
         url: sharingUrl,
     }
 
